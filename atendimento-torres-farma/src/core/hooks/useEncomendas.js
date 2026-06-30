@@ -1,46 +1,31 @@
-import { useState } from 'react';
-import { supabase } from '../../infrastructure/supabase/supabaseClient';
+import { useState, useCallback } from 'react';
+import { EncomendasRepository } from '../../infrastructure/supabase/repositories/EncomendasRepository';
 
 export const useEncomendas = () => {
   const [loading, setLoading] = useState(false);
   const [encomendas, setEncomendas] = useState([]);
 
-  const listarEncomendas = async () => {
+  const listarEncomendas = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('encomendas')
-        .select('*')
-        .order('data_encomenda', { ascending: false });
-
-      if (error) throw error;
+      const data = await EncomendasRepository.listarTodos();
       setEncomendas(data);
     } catch (error) {
       console.error('Erro ao buscar encomendas:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const salvarEncomenda = async (encomendaData) => {
     setLoading(true);
     try {
-      let response;
       if (encomendaData.id) {
-        // Atualizar existente
-        response = await supabase
-          .from('encomendas')
-          .update(encomendaData)
-          .eq('id', encomendaData.id);
+        await EncomendasRepository.atualizar(encomendaData.id, encomendaData);
       } else {
-        // Criar nova
-        response = await supabase
-          .from('encomendas')
-          .insert([encomendaData]);
+        await EncomendasRepository.criar(encomendaData);
       }
-
-      if (response.error) throw response.error;
-      await listarEncomendas(); // Atualiza a lista após salvar
+      await listarEncomendas(); // Recarrega a lista
       return { success: true };
     } catch (error) {
       console.error('Erro ao salvar encomenda:', error);
@@ -53,9 +38,8 @@ export const useEncomendas = () => {
   const deletarEncomenda = async (id) => {
     setLoading(true);
     try {
-      const { error } = await supabase.from('encomendas').delete().eq('id', id);
-      if (error) throw error;
-      await listarEncomendas();
+      await EncomendasRepository.deletar(id);
+      await listarEncomendas(); // Recarrega a lista
       return { success: true };
     } catch (error) {
       console.error('Erro ao deletar encomenda:', error);
@@ -65,11 +49,5 @@ export const useEncomendas = () => {
     }
   };
 
-  return { 
-    encomendas, 
-    loading, 
-    listarEncomendas, 
-    salvarEncomenda,
-    deletarEncomenda 
-  };
+  return { encomendas, loading, listarEncomendas, salvarEncomenda, deletarEncomenda };
 };
