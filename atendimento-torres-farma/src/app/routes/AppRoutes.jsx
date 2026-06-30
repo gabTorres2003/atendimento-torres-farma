@@ -10,6 +10,7 @@ import Login from '../../features/auth/Login';
 import Dashboard from '../../features/dashboard/Dashboard';
 import DiversosSearch from '../../features/diversos/DiversosSearch';
 import EncomendasBoard from '../../features/encomendas/EncomendasBoard';
+import { UserManagement } from '../../features/auth/UserManagement';
 
 // Wrapper para rotas privadas
 const PrivateRoute = ({ children }) => {
@@ -25,43 +26,13 @@ export const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rota Pública (Login) */}
-        <Route 
-          path="/login" 
-          element={
-            <AuthLayout>
-              <Login />
-            </AuthLayout>
-          } 
-        />
+        <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
 
-        {/* Rotas Privadas (Protegidas) */}
-        <Route 
-          path="/" 
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/diversos" 
-          element={
-            <PrivateRoute>
-              <DiversosSearch />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/encomendas" 
-          element={
-            <PrivateRoute>
-              <EncomendasBoard />
-            </PrivateRoute>
-          } 
-        />
+        <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/diversos" element={<PrivateRoute><DiversosSearch /></PrivateRoute>} />
+        <Route path="/encomendas" element={<PrivateRoute><EncomendasBoard /></PrivateRoute>} />
+        <Route path="/usuarios" element={<PrivateRoute><UserManagement /></PrivateRoute>} />
 
-        {/* Rota Fallback (Página não encontrada) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
