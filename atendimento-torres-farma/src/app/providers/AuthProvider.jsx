@@ -7,7 +7,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Verifica se já existe um usuário logado salvo no navegador ao abrir o sistema
   useEffect(() => {
     const storedUser = localStorage.getItem('@AtendimentoTorres:user');
     if (storedUser) {
@@ -16,27 +15,21 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (pin) => {
+  const login = async (usuario, pin) => {
     try {
-      // Busca no banco um usuário ativo com este PIN
       const { data, error } = await supabase
         .from('users')
         .select('*')
+        .ilike('nome', usuario.trim())
         .eq('pin', pin)
         .eq('ativo', true)
         .single();
 
       if (error || !data) {
-        return { success: false, error: 'PIN incorreto ou usuário inativo.' };
+        return { success: false, error: 'Usuário ou PIN incorretos.' };
       }
 
-      // Monta os dados da sessão
-      const userData = { 
-        id: data.id, 
-        nome: data.nome, 
-        role: data.role 
-      };
-      
+      const userData = { id: data.id, nome: data.nome, role: data.role };
       setUser(userData);
       localStorage.setItem('@AtendimentoTorres:user', JSON.stringify(userData));
       

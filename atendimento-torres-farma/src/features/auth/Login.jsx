@@ -22,12 +22,13 @@ export default function Login() {
     setAuthError('');
 
     try {
-      const result = await login(data.pin);
+      // Passando os dois parâmetros para a função do AuthProvider
+      const result = await login(data.usuario, data.pin);
       
       if (result.success) {
         navigate('/', { replace: true });
       } else {
-        setAuthError(result.error || 'PIN incorreto ou usuário inativo.');
+        setAuthError(result.error || 'Usuário ou PIN incorretos.');
       }
     } catch (error) {
       console.error(error);
@@ -53,7 +54,19 @@ export default function Login() {
           <FormError message={authError} />
 
           <FormInput
-            label="PIN de Acesso (4 dígitos)"
+            label="Usuário de Acesso"
+            id="usuario"
+            type="text"
+            placeholder="Ex: gabriel"
+            autoComplete="username"
+            register={register('usuario', {
+              required: 'O usuário é obrigatório',
+            })}
+            error={errors.usuario}
+          />
+
+          <FormInput
+            label="PIN de Acesso"
             id="pin"
             type="password"
             maxLength={4}
