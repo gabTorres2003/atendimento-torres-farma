@@ -5,15 +5,10 @@ export const useUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Lê todos os usuários do banco
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('nome', { ascending: true });
-
+      const { data, error } = await supabase.from('users').select('*').order('nome', { ascending: true });
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
@@ -23,58 +18,44 @@ export const useUsers = () => {
     }
   }, []);
 
-  // Cria ou Atualiza um usuário
   const saveUser = async (userData) => {
     setLoading(true);
     try {
+      const payload = {
+        nome: userData.nome,
+        login: userData.login.toLowerCase().trim(), 
+        pin: userData.pin,
+        role: userData.role,
+        ativo: userData.ativo,
+      };
+
       let response;
       if (userData.id) {
-        // Modo Edição
-        response = await supabase
-          .from('users')
-          .update({
-            nome: userData.nome,
-            pin: userData.pin,
-            role: userData.role,
-            ativo: userData.ativo,
-          })
-          .eq('id', userData.id);
+        response = await supabase.from('users').update(payload).eq('id', userData.id);
       } else {
-        // Modo Criação
-        response = await supabase
-          .from('users')
-          .insert([{
-            nome: userData.nome,
-            pin: userData.pin,
-            role: userData.role,
-            ativo: userData.ativo,
-          }]);
+        response = await supabase.from('users').insert([payload]);
       }
 
       if (response.error) throw response.error;
-      
-      await fetchUsers(); // Recarrega a lista
+      await fetchUsers();
       return { success: true };
     } catch (error) {
       console.error('Erro ao salvar usuário:', error);
-      // Tratamento amigável caso o PIN já exista (Erro 23505 no Postgres)
       if (error.code === '23505') {
-        return { success: false, error: 'Este PIN já está sendo utilizado por outro usuário.' };
+        return { success: false, error: 'Este PIN já está sendo utilizado.' };
       }
-      return { success: false, error: 'Erro ao salvar os dados. Tente novamente.' };
+      return { success: false, error: 'Erro ao salvar os dados.' };
     } finally {
       setLoading(false);
     }
   };
 
-  // Deleta um usuário
   const deleteUser = async (id) => {
     setLoading(true);
     try {
       const { error } = await supabase.from('users').delete().eq('id', id);
       if (error) throw error;
-      
-      await fetchUsers(); // Recarrega a lista
+      await fetchUsers();
       return { success: true };
     } catch (error) {
       console.error('Erro ao deletar usuário:', error);
@@ -84,11 +65,5 @@ export const useUsers = () => {
     }
   };
 
-  return { 
-    users, 
-    loading, 
-    fetchUsers, 
-    saveUser, 
-    deleteUser 
-  };
+  return { users, loading, fetchUsers, saveUser, deleteUser };
 };

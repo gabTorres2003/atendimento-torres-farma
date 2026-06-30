@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .ilike('nome', usuario.trim())
+        .ilike('login', usuario.trim())
         .eq('pin', pin)
         .eq('ativo', true)
         .single();
