@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save, X } from 'lucide-react';
 import { useEncomendas } from '../../core/hooks/useEncomendas';
@@ -6,39 +6,37 @@ import { useAuth } from '../../core/hooks/useAuth';
 
 import { Card } from '../../shared/components/cards/Card';
 import { FormInput } from '../../shared/components/forms/FormInput';
+import { FormError } from '../../shared/components/forms/FormError';
 import { Button } from '../../shared/components/buttons/Button';
 
-export default function EncomendaForm({ encomenda, onClose }) {
+export default function EncomendaForm({ encomenda, onClose, onSaved }) {
   const { salvarEncomenda, loading } = useEncomendas();
-  const { user } = useAuth(); // Pega o usuário logado para salvar como "Vendedor"
+  const { user } = useAuth();
+  const [formError, setFormError] = useState('');
   
   const isEditing = !!encomenda;
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm({
-    defaultValues: {
-      status: 'Pendente'
-    }
+    defaultValues: { status: 'Pendente' }
   });
 
-  // Preenche o formulário se estiver editando
   useEffect(() => {
     if (isEditing) {
       setValue('cliente', encomenda.cliente);
-      setValue('telefone', encomenda.telefone);
+      setValue('telefone', encomenda.telefone || '');
       setValue('produto', encomenda.produto);
-      setValue('data_encomenda', encomenda.data_encomenda);
+      setValue('data_encomenda', encomenda.data_encomenda ? encomenda.data_encomenda.split('T')[0] : '');
       setValue('status', encomenda.status);
-      setValue('fornecedor', encomenda.fornecedor);
-    } else {
-      // Se for nova encomenda, define a data de hoje por padrão
-      setValue('data_encomenda', new Date().toISOString().split('T')[0]);
+      setValue('fornecedor', encomenda.fornecedor || '');
     }
   }, [encomenda, isEditing, setValue]);
 
   const onSubmit = async (data) => {
+    setFormError('');
+    
     const payload = {
       ...data,
-      vendedor: isEditing ? encomenda.vendedor : user.nome,
+      vendedor: isEditing ? encomenda.vendedor : (user?.nome || 'Balcão'),
     };
 
     if (isEditing) {
@@ -46,11 +44,12 @@ export default function EncomendaForm({ encomenda, onClose }) {
     }
 
     const result = await salvarEncomenda(payload);
+    
     if (result.success) {
-      onClose();
+      if (onSaved) onSaved();
+      onClose(); 
     } else {
-      console.error(result.error);
-      alert('Erro ao salvar encomenda. Verifique o console.');
+      setFormError(result.error?.message || 'Erro ao salvar encomenda.');
     }
   };
 
@@ -70,20 +69,23 @@ export default function EncomendaForm({ encomenda, onClose }) {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          
+          <FormError message={formError} />
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <FormInput
               label="Nome do Cliente *"
               id="cliente"
               type="text"
-              register={register('cliente', { required: 'O cliente é obrigatório' })}
+              placeholder="Ex: João"
+              register={register('cliente', { required: 'O nome é obrigatório' })}
               error={errors.cliente}
             />
+
             <FormInput
               label="Telefone / WhatsApp"
               id="telefone"
               type="text"
-              placeholder="(22) 99999-9999"
+              placeholder="Ex: (22) 99999-9999"
               register={register('telefone')}
             />
           </div>
@@ -92,6 +94,7 @@ export default function EncomendaForm({ encomenda, onClose }) {
             label="Produto Desejado *"
             id="produto"
             type="text"
+            placeholder="Ex: Losartana"
             register={register('produto', { required: 'O produto é obrigatório' })}
             error={errors.produto}
           />
@@ -104,16 +107,13 @@ export default function EncomendaForm({ encomenda, onClose }) {
               register={register('data_encomenda', { required: 'A data é obrigatória' })}
               error={errors.data_encomenda}
             />
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Status</label>
-              <select
-                style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }}
-                {...register('status')}
-              >
+              <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }} {...register('status')}>
                 <option value="Pendente">Pendente</option>
-                <option value="Recebido">Recebido (no estoque)</option>
-                <option value="Entregue">Entregue ao cliente</option>
+                <option value="Entregue">Entregue</option>
+                <option value="Cancelado">Cancelado</option>
               </select>
             </div>
           </div>
@@ -122,17 +122,13 @@ export default function EncomendaForm({ encomenda, onClose }) {
             label="Fornecedor (Opcional)"
             id="fornecedor"
             type="text"
-            placeholder="Ex: Profarma, SantaCruz, etc"
+            placeholder="Ex: SantaCruz"
             register={register('fornecedor')}
           />
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-            <Button type="button" onClick={onClose} variant="secondary">
-              Cancelar
-            </Button>
-            <Button type="submit" isLoading={loading} icon={Save}>
-              Salvar
-            </Button>
+            <Button type="button" onClick={onClose} variant="secondary">Cancelar</Button>
+            <Button type="submit" isLoading={loading} icon={Save}>Salvar</Button>
           </div>
         </form>
       </Card>

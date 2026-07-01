@@ -21,7 +21,7 @@ export default function DiversosSearch() {
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px' }}>
       <h1 style={{ fontSize: '1.8rem', color: 'var(--color-primary)', marginBottom: '24px', fontWeight: 'bold' }}>
-        Pesquisa de Diversos (Controlados / Antibióticos)
+        Pesquisa de Diversos
       </h1>
 
       {/* Barra de Pesquisa */}
@@ -30,7 +30,7 @@ export default function DiversosSearch() {
           <Search size={20} color="var(--color-text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
-            placeholder="Buscar por nome do medicamento ou código (gaveta)..."
+            placeholder="Buscar por nome do medicamento ou número do diversos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
