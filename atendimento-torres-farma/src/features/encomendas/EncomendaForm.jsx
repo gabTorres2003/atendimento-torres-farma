@@ -82,11 +82,23 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
             />
 
             <FormInput
-              label="Telefone / WhatsApp"
+              label="Telefone / WhatsApp *"
               id="telefone"
               type="text"
-              placeholder="Ex: (22) 99999-9999"
-              register={register('telefone')}
+              maxLength={15} 
+              placeholder="Ex: 22999999999"
+              register={register('telefone', { 
+                required: 'O telefone é obrigatório',
+                pattern: {
+                  value: /^\d{10,11}$/, 
+                  message: 'Digite apenas os números com DDD (11 dígitos)'
+                },
+                minLength: {
+                  value: 11,
+                  message: 'O telefone deve ter 11 dígitos (DDD + 9 números)'
+                }
+              })}
+              error={errors.telefone}
             />
           </div>
 
