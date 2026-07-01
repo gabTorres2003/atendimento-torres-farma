@@ -38,15 +38,19 @@ export default function EncomendaForm({ encomenda, onClose }) {
   const onSubmit = async (data) => {
     const payload = {
       ...data,
-      id: isEditing ? encomenda.id : undefined,
-      vendedor: isEditing ? encomenda.vendedor : user.nome, 
+      vendedor: isEditing ? encomenda.vendedor : user.nome,
     };
+
+    if (isEditing) {
+      payload.id = encomenda.id;
+    }
 
     const result = await salvarEncomenda(payload);
     if (result.success) {
       onClose();
     } else {
-      alert('Erro ao salvar encomenda.');
+      console.error(result.error);
+      alert('Erro ao salvar encomenda. Verifique o console.');
     }
   };
 
