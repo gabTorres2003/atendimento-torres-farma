@@ -11,6 +11,9 @@ export const EncomendasRepository = {
   },
 
   async criar(payload) {
+    if (!payload.id) {
+      payload.id = crypto.randomUUID();
+    }
     const { data, error } = await supabase.from('encomendas').insert([payload]);
     if (error) throw error;
     return data;

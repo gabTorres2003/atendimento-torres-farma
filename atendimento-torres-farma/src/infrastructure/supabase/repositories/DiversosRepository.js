@@ -36,6 +36,9 @@ export const DiversosRepository = {
   },
 
   async criar(payload) {
+    if (!payload.id) {
+      payload.id = crypto.randomUUID();
+    }
     const { data, error } = await supabase.from('medicamentos_diversos').insert([payload]);
     if (error) throw error;
     return data;
