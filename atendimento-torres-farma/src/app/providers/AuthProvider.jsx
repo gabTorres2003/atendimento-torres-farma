@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
       const userData = { id: data.id, nome: data.nome, role: data.role };
       setUser(userData);
       localStorage.setItem('@AtendimentoTorres:user', JSON.stringify(userData));
+      await AuditoriaRepository.registrarAcesso(data.nome, 'LOGIN', 'Entrou no sistema.');
       
       return { success: true };
     } catch (error) {
@@ -43,6 +44,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('@AtendimentoTorres:user');
+    AuditoriaRepository.registrarAcesso(user.nome, 'LOGOUT', 'Saiu do sistema.');
   };
 
   return (

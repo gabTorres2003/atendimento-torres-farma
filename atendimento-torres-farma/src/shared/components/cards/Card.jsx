@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const Card = ({ children, title, icon: Icon, className = '', style }) => {
+export const Card = ({ children, title, icon: Icon, className = '', style, onClick }) => {
   return (
     <div className={`card ${className}`} style={style}>
       {title && (

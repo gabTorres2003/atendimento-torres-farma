@@ -23,9 +23,12 @@ export default function AuditoriaBoard() {
 
   const getAcaoStyle = (acao) => {
     switch (acao) {
-      case 'CRIOU': return { backgroundColor: '#dcfce7', color: '#166534' };
-      case 'EDITOU': return { backgroundColor: '#e0f2fe', color: '#0369a1' };
-      case 'EXCLUIU': return { backgroundColor: '#fee2e2', color: '#991b1b' };
+      case 'CRIOU': return { backgroundColor: '#dcfce7', color: '#166534' }; // Verde
+      case 'EDITOU': return { backgroundColor: '#e0f2fe', color: '#0369a1' }; // Azul
+      case 'EXCLUIU': return { backgroundColor: '#fee2e2', color: '#991b1b' }; // Vermelho
+      case 'LOGIN': 
+      case 'LOGOUT': return { backgroundColor: '#fef9c3', color: '#854d0e' }; // Amarelo
+      case 'ACESSO': return { backgroundColor: '#f3f4f6', color: '#374151' }; // Cinza
       default: return { backgroundColor: '#f1f5f9', color: '#475569' };
     }
   };

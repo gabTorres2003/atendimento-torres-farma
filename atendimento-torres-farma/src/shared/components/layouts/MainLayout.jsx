@@ -8,6 +8,26 @@ export default function MainLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  useEffect(() => {
+    if (user?.nome && location.pathname) {
+      let modulo = '';
+      switch (location.pathname) {
+        case '/': modulo = 'Início (Dashboard)'; break;
+        case '/diversos': modulo = 'Módulo Diversos'; break;
+        case '/encomendas': modulo = 'Módulo Encomendas'; break;
+        case '/usuarios': modulo = 'Módulo de Equipe'; break;
+        case '/auditoria': modulo = 'Módulo de Auditoria'; break;
+        default: modulo = location.pathname;
+      }
+      
+      AuditoriaRepository.registrarAcesso(
+        user.nome, 
+        'ACESSO', 
+        `Navegou para: ${modulo}`
+      );
+    }
+  }, [location.pathname, user?.nome]);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
