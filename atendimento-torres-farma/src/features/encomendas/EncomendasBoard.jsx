@@ -21,13 +21,13 @@ export default function EncomendasBoard() {
 
   const handleDelete = async (id, produto) => {
     if (window.confirm(`Tem certeza que deseja excluir a encomenda de ${produto}?`)) {
-      await deletarEncomenda(id);
+      await deletarEncomenda(id, produto);
     }
   };
 
   const handleStatusChange = async (encomenda, novoStatus) => {
     const payload = { ...encomenda, status: novoStatus };
-    const result = await salvarEncomenda(payload);
+    const result = await salvarEncomenda(payload, encomenda);
     if (!result.success) {
       alert('Erro ao atualizar o status da encomenda.');
     }

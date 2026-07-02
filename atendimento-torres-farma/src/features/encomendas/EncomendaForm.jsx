@@ -47,7 +47,7 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
       payload.id = encomenda.id;
     }
 
-    const result = await salvarEncomenda(payload);
+    const result = await salvarEncomenda(payload, isEditing ? encomenda : null);
     
     if (result.success) {
       if (onSaved) onSaved(); 

@@ -29,5 +29,15 @@ export const EncomendasRepository = {
     const { error } = await supabase.from('encomendas').delete().eq('id', id);
     if (error) throw error;
     return true;
+  },
+
+  async registrarAuditoria(vendedor, acao, produto, detalhes) {
+    const { error } = await supabase.from('auditoria_encomendas').insert([{
+      vendedor,
+      acao,
+      produto,
+      detalhes
+    }]);
+    if (error) console.error('Erro na auditoria:', error);
   }
 };
