@@ -6,7 +6,7 @@ import { Card } from '../../shared/components/cards/Card';
 import { Button } from '../../shared/components/buttons/Button';
 
 export default function EncomendasBoard() {
-  const { encomendas, loading, listarEncomendas, deletarEncomenda } = useEncomendas();
+  const { encomendas, loading, listarEncomendas, deletarEncomenda, salvarEncomenda } = useEncomendas();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [encomendaEdit, setEncomendaEdit] = useState(null);
 
@@ -22,6 +22,14 @@ export default function EncomendasBoard() {
   const handleDelete = async (id, produto) => {
     if (window.confirm(`Tem certeza que deseja excluir a encomenda de ${produto}?`)) {
       await deletarEncomenda(id);
+    }
+  };
+
+  const handleStatusChange = async (encomenda, novoStatus) => {
+    const payload = { ...encomenda, status: novoStatus };
+    const result = await salvarEncomenda(payload);
+    if (!result.success) {
+      alert('Erro ao atualizar o status da encomenda.');
     }
   };
 
@@ -63,14 +71,15 @@ export default function EncomendasBoard() {
                 <th style={{ padding: '12px 16px' }}>Produto</th>
                 <th style={{ padding: '12px 16px' }}>Status</th>
                 <th style={{ padding: '12px 16px' }}>Fornecedor</th>
+                <th style={{ padding: '12px 16px' }}>Vendedor</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading && encomendas.length === 0 ? (
-                <tr><td colSpan="7" style={{ padding: '16px', textAlign: 'center' }}>Carregando...</td></tr>
+                <tr><td colSpan="8" style={{ padding: '16px', textAlign: 'center' }}>Carregando...</td></tr>
               ) : encomendas.length === 0 ? (
-                <tr><td colSpan="7" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhuma encomenda encontrada.</td></tr>
+                <tr><td colSpan="8" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhuma encomenda encontrada.</td></tr>
               ) : (
                 encomendas.map((enc) => (
                   <tr key={enc.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
@@ -78,12 +87,31 @@ export default function EncomendasBoard() {
                     <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{enc.cliente}</td>
                     <td style={{ padding: '12px 16px' }}>{enc.telefone || '-'}</td>
                     <td style={{ padding: '12px 16px' }}>{enc.produto}</td>
+                    
+                    {/* Select de Status editável direto na tabela */}
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', ...getStatusStyle(enc.status) }}>
-                        {enc.status}
-                      </span>
+                      <select
+                        value={enc.status}
+                        onChange={(e) => handleStatusChange(enc, e.target.value)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                          border: '1px solid transparent',
+                          cursor: 'pointer',
+                          outline: 'none',
+                          ...getStatusStyle(enc.status)
+                        }}
+                      >
+                        <option value="Pendente" style={{backgroundColor: '#fff', color: '#000'}}>Pendente</option>
+                        <option value="Entregue" style={{backgroundColor: '#fff', color: '#000'}}>Entregue</option>
+                        <option value="Cancelado" style={{backgroundColor: '#fff', color: '#000'}}>Cancelado</option>
+                      </select>
                     </td>
+
                     <td style={{ padding: '12px 16px' }}>{enc.fornecedor || '-'}</td>
+                    <td style={{ padding: '12px 16px' }}>{enc.vendedor || '-'}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                       <button onClick={() => handleOpenModal(enc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: '16px' }}>
                         <Edit size={18} />
@@ -104,7 +132,7 @@ export default function EncomendasBoard() {
         <EncomendaForm
           encomenda={encomendaEdit}
           onClose={() => setIsModalOpen(false)}
-          onSaved={listarEncomendas} /* O GATILHO ESTÁ AQUI! */
+          onSaved={listarEncomendas}
         />
       )}
     </div>

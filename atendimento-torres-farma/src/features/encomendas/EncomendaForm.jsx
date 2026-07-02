@@ -17,7 +17,7 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
   const isEditing = !!encomenda;
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm({
-    defaultValues: { status: 'Pendente' }
+    defaultValues: { status: 'Pendente', fornecedor: '' }
   });
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
     const result = await salvarEncomenda(payload);
     
     if (result.success) {
-      if (onSaved) onSaved();
+      if (onSaved) onSaved(); 
       onClose(); 
     } else {
       setFormError(result.error?.message || 'Erro ao salvar encomenda.');
@@ -85,17 +85,14 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
               label="Telefone / WhatsApp *"
               id="telefone"
               type="text"
-              maxLength={15} 
+              maxLength={11}
+              inputMode="numeric"
               placeholder="Ex: 22999999999"
               register={register('telefone', { 
                 required: 'O telefone é obrigatório',
                 pattern: {
-                  value: /^\d{10,11}$/, 
-                  message: 'Digite apenas os números com DDD (11 dígitos)'
-                },
-                minLength: {
-                  value: 11,
-                  message: 'O telefone deve ter 11 dígitos (DDD + 9 números)'
+                  value: /^[0-9]{11}$/,
+                  message: 'Digite o DDD e o número (exatos 11 números)'
                 }
               })}
               error={errors.telefone}
@@ -122,7 +119,7 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Status</label>
-              <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }} {...register('status')}>
+              <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('status')}>
                 <option value="Pendente">Pendente</option>
                 <option value="Entregue">Entregue</option>
                 <option value="Cancelado">Cancelado</option>
@@ -130,13 +127,20 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
             </div>
           </div>
 
-          <FormInput
-            label="Fornecedor (Opcional)"
-            id="fornecedor"
-            type="text"
-            placeholder="Ex: SantaCruz"
-            register={register('fornecedor')}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Fornecedor Solicitado</label>
+            <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('fornecedor')}>
+              <option value="">Selecione um fornecedor...</option>
+              <option value="SantaCruz">SantaCruz</option>
+              <option value="Profarma">Profarma</option>
+              <option value="Panvel">Panvel</option>
+              <option value="Rio Drog's">Rio Drog's</option>
+              <option value="Audifar">Audifar</option>
+              <option value="GAM">GAM</option>
+              <option value="Nazária">Nazária</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <Button type="button" onClick={onClose} variant="secondary">Cancelar</Button>
