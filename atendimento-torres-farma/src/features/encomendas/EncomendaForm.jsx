@@ -17,7 +17,11 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
   const isEditing = !!encomenda;
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm({
-    defaultValues: { status: 'Pendente', fornecedor: '' }
+    defaultValues: { 
+      status: 'Pendente de Compra', 
+      fornecedor: '',
+      data_encomenda: new Date().toISOString().split('T')[0] 
+    }
   });
 
   useEffect(() => {
@@ -120,9 +124,10 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Status</label>
               <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('status')}>
-                <option value="Pendente">Pendente</option>
-                <option value="Entregue">Entregue</option>
-                <option value="Cancelado">Cancelado</option>
+                <option value="Pendente de Compra">Pendente de Compra</option>
+                <option value="Comprado">Comprado</option>
+                <option value="Pendente de Entrega">Pendente de Entrega</option>
+                <option value="Concluída">Concluída</option>
               </select>
             </div>
           </div>
@@ -131,13 +136,9 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
             <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Fornecedor Solicitado</label>
             <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('fornecedor')}>
               <option value="">Selecione um fornecedor...</option>
-              <option value="SantaCruz">SantaCruz</option>
+              <option value="Panpharma">Panpharma</option>
               <option value="Profarma">Profarma</option>
-              <option value="Panvel">Panvel</option>
-              <option value="Rio Drog's">Rio Drog's</option>
-              <option value="Audifar">Audifar</option>
-              <option value="GAM">GAM</option>
-              <option value="Nazária">Nazária</option>
+              <option value="SantaCruz">SantaCruz</option>
               <option value="Outro">Outro</option>
             </select>
           </div>

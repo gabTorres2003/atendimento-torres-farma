@@ -42,11 +42,13 @@ export default function EncomendasBoard() {
     return dataIso;
   };
 
+  // Cores dinâmicas baseadas no checklist
   const getStatusStyle = (status) => {
     switch (status) {
-      case 'Pendente': return { backgroundColor: '#fef3c7', color: '#b45309' };
-      case 'Entregue': return { backgroundColor: '#dcfce7', color: '#166534' };
-      case 'Cancelado': return { backgroundColor: '#fee2e2', color: '#991b1b' };
+      case 'Pendente de Compra': return { backgroundColor: '#fef3c7', color: '#b45309' }; // Amarelo
+      case 'Comprado': return { backgroundColor: '#e0f2fe', color: '#0369a1' }; // Azul
+      case 'Pendente de Entrega': return { backgroundColor: '#fae8ff', color: '#86198f' }; // Roxo
+      case 'Concluída': return { backgroundColor: '#dcfce7', color: '#166534' }; // Verde
       default: return { backgroundColor: '#f1f5f9', color: '#475569' };
     }
   };
@@ -88,7 +90,7 @@ export default function EncomendasBoard() {
                     <td style={{ padding: '12px 16px' }}>{enc.telefone || '-'}</td>
                     <td style={{ padding: '12px 16px' }}>{enc.produto}</td>
                     
-                    {/* Select de Status editável direto na tabela */}
+                    {/* Select mapeado com as opções do checklist */}
                     <td style={{ padding: '12px 16px' }}>
                       <select
                         value={enc.status}
@@ -104,9 +106,10 @@ export default function EncomendasBoard() {
                           ...getStatusStyle(enc.status)
                         }}
                       >
-                        <option value="Pendente" style={{backgroundColor: '#fff', color: '#000'}}>Pendente</option>
-                        <option value="Entregue" style={{backgroundColor: '#fff', color: '#000'}}>Entregue</option>
-                        <option value="Cancelado" style={{backgroundColor: '#fff', color: '#000'}}>Cancelado</option>
+                        <option value="Pendente de Compra" style={{backgroundColor: '#fff', color: '#000'}}>Pendente de Compra</option>
+                        <option value="Comprado" style={{backgroundColor: '#fff', color: '#000'}}>Comprado</option>
+                        <option value="Pendente de Entrega" style={{backgroundColor: '#fff', color: '#000'}}>Pendente de Entrega</option>
+                        <option value="Concluída" style={{backgroundColor: '#fff', color: '#000'}}>Concluída</option>
                       </select>
                     </td>
 
