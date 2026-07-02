@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { LogOut, Home, Search, Package, Users, FileText } from 'lucide-react';
+import { LogOut, Home, Search, Package, Users, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../../core/hooks/useAuth';
+import { AuditoriaRepository } from '../../../infrastructure/supabase/repositories/AuditoriaRepository';
 
 export default function MainLayout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Rastreador Automático de Navegação
   useEffect(() => {
     if (user?.nome && location.pathname) {
       let modulo = '';
@@ -41,16 +43,15 @@ export default function MainLayout({ children }) {
 
   if (user?.role === 'admin') {
     navItems.push({ path: '/usuarios', label: 'Equipe', icon: Users });
-    navItems.push({ path: '/auditoria', label: 'Auditoria', icon: FileText });
+    navItems.push({ path: '/auditoria', label: 'Auditoria', icon: ClipboardList });
   }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-background-alt)' }}>
-      {/* Menu Lateral */}
       <aside style={{ width: '250px', backgroundColor: '#fff', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '24px', borderBottom: '1px solid var(--color-border)', textAlign: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
-            <img src="/logo-torres.png" alt="Logo" style={{ height: '32px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+            <img src="/logo-torres.png" alt="Logo Torres" style={{ height: '36px', objectFit: 'contain' }} />
             <h2 style={{ color: 'var(--color-primary)', fontWeight: 'bold', fontSize: '1.25rem', margin: 0 }}>Torres Farma</h2>
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>Hub de Atendimento</p>
@@ -93,7 +94,6 @@ export default function MainLayout({ children }) {
         </div>
       </aside>
 
-      {/* Conteúdo Principal da Tela */}
       <main style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
         {children || <Outlet />}
       </main>
