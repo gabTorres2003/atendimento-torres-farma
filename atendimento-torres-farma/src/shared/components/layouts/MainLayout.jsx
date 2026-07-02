@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { LogOut, Home, Search, Package, Users } from 'lucide-react';
+import { LogOut, Home, Search, Package, Users, FileText } from 'lucide-react';
 import { useAuth } from '../../../core/hooks/useAuth';
 
 export default function MainLayout({ children }) {
@@ -21,6 +21,7 @@ export default function MainLayout({ children }) {
 
   if (user?.role === 'admin') {
     navItems.push({ path: '/usuarios', label: 'Equipe', icon: Users });
+    navItems.push({ path: '/auditoria', label: 'Auditoria', icon: FileText });
   }
 
   return (
@@ -28,8 +29,11 @@ export default function MainLayout({ children }) {
       {/* Menu Lateral */}
       <aside style={{ width: '250px', backgroundColor: '#fff', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '24px', borderBottom: '1px solid var(--color-border)', textAlign: 'center' }}>
-          <h2 style={{ color: 'var(--color-primary)', fontWeight: 'bold', fontSize: '1.25rem' }}>Torres Farma</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Hub de Atendimento</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
+            <img src="/logo-torres.png" alt="Logo" style={{ height: '32px' }} />
+            <h2 style={{ color: 'var(--color-primary)', fontWeight: 'bold', fontSize: '1.25rem', margin: 0 }}>Torres Farma</h2>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>Hub de Atendimento</p>
         </div>
         
         <nav style={{ flex: 1, padding: '16px 0' }}>

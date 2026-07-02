@@ -11,6 +11,7 @@ import Dashboard from '../../features/dashboard/Dashboard';
 import DiversosSearch from '../../features/diversos/DiversosSearch';
 import EncomendasBoard from '../../features/encomendas/EncomendasBoard';
 import { UserManagement } from '../../features/auth/UserManagement';
+import AuditoriaBoard from '../../features/auditoria/AuditoriaBoard';
 
 // Wrapper para rotas privadas
 const PrivateRoute = ({ children }) => {
@@ -32,6 +33,7 @@ export const AppRoutes = () => {
         <Route path="/diversos" element={<PrivateRoute><DiversosSearch /></PrivateRoute>} />
         <Route path="/encomendas" element={<PrivateRoute><EncomendasBoard /></PrivateRoute>} />
         <Route path="/usuarios" element={<PrivateRoute><UserManagement /></PrivateRoute>} />
+        <Route path="/auditoria" element={<PrivateRoute><AuditoriaBoard /></PrivateRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

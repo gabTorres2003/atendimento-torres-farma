@@ -42,6 +42,7 @@ export default function Login() {
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: 'var(--color-background-alt)' }}>
       <Card style={{ width: '100%', maxWidth: '420px', padding: '32px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <img src="/logo-torres.png" alt="Logo Torres Farma" style={{ height: '60px', marginBottom: '16px' }} />
           <h2 style={{ color: 'var(--color-primary)', fontSize: '1.75rem', fontWeight: 'bold' }}>
             Torres Farma
           </h2>
