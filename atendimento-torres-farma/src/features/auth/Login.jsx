@@ -22,7 +22,7 @@ export default function Login() {
     setAuthError('');
 
     try {
-      // Passando os dois parâmetros para a função do AuthProvider
+      // Passa os dois campos para a validação do AuthProvider
       const result = await login(data.usuario, data.pin);
       
       if (result.success) {
@@ -41,9 +41,10 @@ export default function Login() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: 'var(--color-background-alt)' }}>
       <Card style={{ width: '100%', maxWidth: '420px', padding: '32px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <img src="/logo-torres.png" alt="Logo Torres Farma" style={{ height: '60px', marginBottom: '16px' }} />
-          <h2 style={{ color: 'var(--color-primary)', fontSize: '1.75rem', fontWeight: 'bold' }}>
+        
+        <div style={{ textAlign: 'center', marginBottom: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <img src="/logo-torres.png" alt="Logo Torres Farma" style={{ height: '70px', marginBottom: '16px', objectFit: 'contain' }} />
+          <h2 style={{ color: 'var(--color-primary)', fontSize: '1.75rem', fontWeight: 'bold', margin: 0 }}>
             Torres Farma
           </h2>
           <p style={{ color: 'var(--color-text-muted)', marginTop: '4px' }}>
@@ -58,7 +59,7 @@ export default function Login() {
             label="Usuário de Acesso"
             id="usuario"
             type="text"
-            placeholder="Ex: gabriel"
+            placeholder="Ex: caio"
             autoComplete="username"
             register={register('usuario', {
               required: 'O usuário é obrigatório',
@@ -67,7 +68,7 @@ export default function Login() {
           />
 
           <FormInput
-            label="PIN de Acesso"
+            label="PIN de Acesso (4 dígitos)"
             id="pin"
             type="password"
             maxLength={4}

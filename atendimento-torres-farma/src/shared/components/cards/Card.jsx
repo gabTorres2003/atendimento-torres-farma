@@ -2,7 +2,7 @@ import React from 'react';
 
 export const Card = ({ children, title, icon: Icon, className = '', style, onClick }) => {
   return (
-    <div className={`card ${className}`} style={style}>
+    <div className={`card ${className}`} style={style} onClick={onClick}>
       {title && (
         <h3 className="card-title">
           {Icon && <Icon size={24} />}
