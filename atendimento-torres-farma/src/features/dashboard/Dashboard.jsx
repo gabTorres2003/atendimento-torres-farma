@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Package, Users } from 'lucide-react';
+import { Search, Package, Users, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../core/hooks/useAuth';
 import { Card } from '../../shared/components/cards/Card';
 
