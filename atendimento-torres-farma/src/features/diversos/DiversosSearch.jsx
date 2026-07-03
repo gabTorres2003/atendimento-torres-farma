@@ -8,10 +8,15 @@ import { Button } from '../../shared/components/buttons/Button';
 
 export default function DiversosSearch() {
   const { buscarTodos, deletarMedicamento } = useDiversos();
-  const { user } = useAuth(); // Identifica se é Admin ou Balconista
+  const { user } = useAuth();
   const [medicamentos, setMedicamentos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [termoBusca, setTermoBusca] = useState('');
+  
+  // Novos estados para os botões de filtro
+  const [filtroCategoria, setFiltroCategoria] = useState('');
+  const [filtroClassificacao, setFiltroClassificacao] = useState('');
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicamentoEdit, setMedicamentoEdit] = useState(null);
 
@@ -27,7 +32,6 @@ export default function DiversosSearch() {
     }
   };
 
-  // Carrega tudo ao abrir a tela
   useEffect(() => {
     fetchMedicamentos();
   }, []);
@@ -49,6 +53,13 @@ export default function DiversosSearch() {
     }
   };
 
+  // Lógica matemática do filtro (cruza as informações selecionadas)
+  const medicamentosFiltrados = medicamentos.filter((med) => {
+    const passouCategoria = filtroCategoria ? med.categoria === filtroCategoria : true;
+    const passouClassificacao = filtroClassificacao ? med.classificacao === filtroClassificacao : true;
+    return passouCategoria && passouClassificacao;
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1000px', margin: '0 auto' }}>
       
@@ -57,7 +68,6 @@ export default function DiversosSearch() {
           Pesquisa de Diversos
         </h2>
         
-        {/* BOTÃO OCULTO PARA BALCONISTAS: Apenas ADM pode adicionar */}
         {user?.role === 'admin' && (
           <Button onClick={() => handleOpenModal()} icon={Plus} style={{ width: 'auto' }}>
             Novo Medicamento
@@ -66,70 +76,119 @@ export default function DiversosSearch() {
       </div>
 
       <Card>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-          <input
-            type="text"
-            placeholder="Buscar por nome ou código..."
-            value={termoBusca}
-            onChange={(e) => setTermoBusca(e.target.value)}
-            style={{ flex: 1, padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none', fontSize: '1rem' }}
-          />
-          <Button type="submit" icon={SearchIcon} style={{ width: 'auto', padding: '0 24px' }}>
+        {/* Barra de Pesquisa */}
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <SearchIcon size={20} color="var(--color-text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              type="text"
+              placeholder="Buscar por nome do medicamento ou número do diversos..."
+              value={termoBusca}
+              onChange={(e) => setTermoBusca(e.target.value)}
+              style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none', fontSize: '1rem' }}
+            />
+          </div>
+          <Button type="submit" style={{ width: 'auto', padding: '0 32px' }}>
             Buscar
           </Button>
         </form>
 
+        {/* Botões de Filtro */}
+        <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', flexWrap: 'wrap', padding: '12px', backgroundColor: 'var(--color-background-alt)', borderRadius: '8px' }}>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>Filtrar por Categoria:</span>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {['', 'Antibiótico', 'Controlado'].map(cat => (
+                <button
+                  key={`cat-${cat}`}
+                  type="button"
+                  onClick={() => setFiltroCategoria(cat)}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    border: filtroCategoria === cat ? 'none' : '1px solid var(--color-border)',
+                    backgroundColor: filtroCategoria === cat ? 'var(--color-primary)' : '#fff',
+                    color: filtroCategoria === cat ? '#fff' : 'var(--color-text-main)',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: filtroCategoria === cat ? 'bold' : 'normal',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {cat === '' ? 'Todas' : cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>Filtrar por Classificação:</span>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {['', 'Genérico', 'Ético', 'Similar'].map(clas => (
+                <button
+                  key={`clas-${clas}`}
+                  type="button"
+                  onClick={() => setFiltroClassificacao(clas)}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    border: filtroClassificacao === clas ? 'none' : '1px solid var(--color-border)',
+                    backgroundColor: filtroClassificacao === clas ? 'var(--color-primary)' : '#fff',
+                    color: filtroClassificacao === clas ? '#fff' : 'var(--color-text-main)',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: filtroClassificacao === clas ? 'bold' : 'normal',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {clas === '' ? 'Todas' : clas}
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Tabela de Resultados */}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <th style={{ padding: '12px 16px', width: '80px' }}>Código</th>
+                <th style={{ padding: '12px 16px', width: '120px' }}>Código / Gaveta</th>
                 <th style={{ padding: '12px 16px' }}>Produto</th>
                 <th style={{ padding: '12px 16px' }}>Categoria</th>
                 <th style={{ padding: '12px 16px' }}>Classificação</th>
-                <th style={{ padding: '12px 16px' }}>Preço</th>
-                
-                {/* CABEÇALHO OCULTO PARA BALCONISTAS */}
-                {user?.role === 'admin' && <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ações</th>}
+                {user?.role === 'admin' && <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ações (Admin)</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={user?.role === 'admin' ? 6 : 5} style={{ padding: '16px', textAlign: 'center' }}>Carregando...</td></tr>
-              ) : medicamentos.length === 0 ? (
-                <tr><td colSpan={user?.role === 'admin' ? 6 : 5} style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhum medicamento encontrado.</td></tr>
+                <tr><td colSpan={user?.role === 'admin' ? 5 : 4} style={{ padding: '16px', textAlign: 'center' }}>Carregando...</td></tr>
+              ) : medicamentosFiltrados.length === 0 ? (
+                <tr><td colSpan={user?.role === 'admin' ? 5 : 4} style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhum medicamento encontrado para este filtro.</td></tr>
               ) : (
-                medicamentos.map((med) => (
+                medicamentosFiltrados.map((med) => (
                   <tr key={med.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                      {med.codigo_diversos ? String(med.codigo_diversos).padStart(3, '0') : '-'}
+                      {med.codigo_diversos ? med.codigo_diversos : '-'}
                     </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{med.produto}</td>
+                    <td style={{ padding: '12px 16px' }}>{med.produto}</td>
                     
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{ 
                         padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
-                        backgroundColor: med.categoria === 'Controlado' ? '#fee2e2' : '#e0f2fe',
-                        color: med.categoria === 'Controlado' ? '#991b1b' : '#0369a1'
+                        backgroundColor: med.categoria === 'Controlado' ? '#fef3c7' : '#fef9c3',
+                        color: med.categoria === 'Controlado' ? '#b45309' : '#854d0e'
                       }}>
                         {med.categoria}
                       </span>
                     </td>
                     
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{ 
-                        padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
-                        backgroundColor: '#f1f5f9', color: '#475569'
-                      }}>
-                        {med.classificacao || '-'}
-                      </span>
-                    </td>
-
-                    <td style={{ padding: '12px 16px' }}>
-                      {med.preco ? `R$ ${Number(med.preco).toFixed(2).replace('.', ',')}` : '-'}
+                      {med.classificacao || '-'}
                     </td>
                     
-                    {/* AÇÕES OCULTAS PARA BALCONISTAS: Apenas ADM pode editar/excluir */}
                     {user?.role === 'admin' && (
                       <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button onClick={() => handleOpenModal(med)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: '16px' }}>

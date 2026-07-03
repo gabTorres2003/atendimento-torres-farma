@@ -26,7 +26,6 @@ export default function DiversosForm({ medicamento, onClose, onSaved }) {
       setValue('produto', medicamento.produto);
       setValue('categoria', medicamento.categoria);
       setValue('classificacao', medicamento.classificacao || '');
-      setValue('preco', medicamento.preco || '');
       setValue('codigo_diversos', medicamento.codigo_diversos || '');
     }
   }, [medicamento, isEditing, setValue]);
@@ -36,7 +35,7 @@ export default function DiversosForm({ medicamento, onClose, onSaved }) {
 
     const payload = {
       ...data,
-      preco: data.preco ? parseFloat(data.preco) : null,
+      preco: null // O preço foi descontinuado
     };
 
     if (isEditing) {
@@ -47,7 +46,7 @@ export default function DiversosForm({ medicamento, onClose, onSaved }) {
     
     if (result.success) {
       if (!isEditing) {
-        alert(`Medicamento salvo com sucesso!\nO código de diversos gerado foi: ${result.codigoGerado}`);
+        alert(`Medicamento salvo com sucesso!\nO código/gaveta gerado foi: ${result.codigoGerado}`);
       }
       onSaved();
       onClose();
@@ -102,19 +101,10 @@ export default function DiversosForm({ medicamento, onClose, onSaved }) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <FormInput
-              label="Preço R$ (Opcional)"
-              id="preco"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              register={register('preco')}
-            />
-            
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
             {isEditing && (
               <FormInput
-                label="Código Diversos"
+                label="Código / Gaveta"
                 id="codigo_diversos"
                 type="text"
                 readOnly
@@ -123,7 +113,7 @@ export default function DiversosForm({ medicamento, onClose, onSaved }) {
             )}
             {!isEditing && (
               <div style={{ display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem', padding: '8px' }}>
-                * O Código Diversos será gerado automaticamente.
+                * O Código / Gaveta será gerado automaticamente.
               </div>
             )}
           </div>
