@@ -2,11 +2,19 @@ import { supabase } from '../supabaseClient';
 
 export const DiversosRepository = {
   async buscarTodos(termo = '') {
-    let query = supabase.from('medicamentos_diversos').select('*');
+    let query = supabase.from('medicamentos_diversos').select('*').order('produto', { ascending: true });
+
     if (termo) {
-      query = query.or(`produto.ilike.%${termo}%,codigo_diversos.ilike.%${termo}%`);
+      const termoLimpo = termo.trim();
+      
+      if (/^\d+$/.test(termoLimpo)) {
+        query = query.eq('codigo_diversos', termoLimpo);
+      } else {
+        query = query.ilike('produto', `%${termoLimpo}%`);
+      }
     }
-    const { data, error } = await query.order('produto', { ascending: true });
+
+    const { data, error } = await query;
     if (error) throw error;
     return data || [];
   },

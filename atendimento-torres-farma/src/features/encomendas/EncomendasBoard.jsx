@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MessageCircle } from 'lucide-react';
 import { useEncomendas } from '../../core/hooks/useEncomendas';
 import EncomendaForm from './EncomendaForm';
 import { Card } from '../../shared/components/cards/Card';
@@ -25,19 +25,39 @@ export default function EncomendasBoard() {
     }
   };
 
-  // Interação direta com os checkboxes na tabela
   const handleCheckboxChange = async (encomenda, campo, valor) => {
     const payload = { ...encomenda, [campo]: valor };
-    
-    // Regra: Se marcou como comprado pela tabela, gera a data de compra automaticamente
     if (campo === 'comprado' && valor && !payload.data_compra) {
       payload.data_compra = new Date().toISOString().split('T')[0];
     }
-    
     const result = await salvarEncomenda(payload, encomenda);
     if (!result.success) {
       alert('Erro ao atualizar a encomenda.');
     }
+  };
+
+  const enviarWhatsApp = (enc) => {
+    if (!enc.telefone) {
+      alert('Esta encomenda não possui um telefone cadastrado.');
+      return;
+    }
+
+    // Remove qualquer traço, espaço ou parênteses do número
+    const numeroLimpo = enc.telefone.replace(/\D/g, '');
+    
+    // Mensagem dinâmica baseada no status
+    let mensagem = '';
+    if (enc.entregue) {
+      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Passando para confirmar que a entrega da sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} foi concluída. Muito obrigado pela preferência!`;
+    } else if (enc.comprado) {
+      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Boas notícias: sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} já chegou e está separada para você!`;
+    } else {
+      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Referente à sua encomenda de ${enc.quantidade || '1'}x ${enc.produto}...`;
+    }
+
+    // Abre a API oficial do WhatsApp já com texto pronto
+    const url = `https://wa.me/55${numeroLimpo}?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
   };
 
   const formatData = (dataIso) => {
@@ -49,22 +69,17 @@ export default function EncomendasBoard() {
     return dataIso;
   };
 
-  // Lógica inteligente de Status baseada nos Checks
   const getStatusInfo = (enc) => {
     if (enc.entregue) return { texto: 'Concluída', cor: { backgroundColor: '#dcfce7', color: '#166534' } };
     if (enc.comprado) return { texto: 'Pendente de Entrega', cor: { backgroundColor: '#e0f2fe', color: '#0369a1' } };
     return { texto: 'Pendente de Compra', cor: { backgroundColor: '#fef3c7', color: '#b45309' } };
   };
 
-  // Ordenação: Pendentes no topo (por data), Concluídas no fim
   const encomendasOrdenadas = [...encomendas].sort((a, b) => {
     const aPendente = !a.entregue;
     const bPendente = !b.entregue;
-    
     if (aPendente && !bPendente) return -1;
     if (!aPendente && bPendente) return 1;
-    
-    // Se ambos forem pendentes ou ambos concluídos, ordena pela data mais nova
     const dataA = new Date(a.data_encomenda || 0);
     const dataB = new Date(b.data_encomenda || 0);
     return dataB - dataA;
@@ -107,13 +122,25 @@ export default function EncomendasBoard() {
                       <td style={{ padding: '12px 16px' }}>{formatData(enc.data_encomenda)}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ fontWeight: 'bold' }}>{enc.cliente}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{enc.telefone}</div>
+                        
+                        {/* Botão do WhatsApp Inserido Aqui */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                          {enc.telefone || '-'}
+                          {enc.telefone && (
+                            <button 
+                              onClick={() => enviarWhatsApp(enc)} 
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', padding: 0, display: 'flex' }} 
+                              title="Avisar pelo WhatsApp"
+                            >
+                              <MessageCircle size={15} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{enc.produto}</td>
                       <td style={{ padding: '12px 16px' }}>{enc.quantidade || '1'}</td>
                       <td style={{ padding: '12px 16px', fontSize: '0.9rem' }}>{enc.pagamento || '-'}</td>
                       
-                      {/* Checkboxes de Controle Direto */}
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
