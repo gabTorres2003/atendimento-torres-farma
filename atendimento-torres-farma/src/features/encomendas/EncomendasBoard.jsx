@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, MessageCircle } from 'lucide-react';
 import { useEncomendas } from '../../core/hooks/useEncomendas';
+import { AuditoriaRepository } from '../../infrastructure/supabase/repositories/AuditoriaRepository';
 import EncomendaForm from './EncomendaForm';
 import { Card } from '../../shared/components/cards/Card';
 import { Button } from '../../shared/components/buttons/Button';
@@ -27,11 +28,25 @@ export default function EncomendasBoard() {
 
   const handleCheckboxChange = async (encomenda, campo, valor) => {
     const payload = { ...encomenda, [campo]: valor };
+    
     if (campo === 'comprado' && valor && !payload.data_compra) {
       payload.data_compra = new Date().toISOString().split('T')[0];
     }
+    
     const result = await salvarEncomenda(payload, encomenda);
-    if (!result.success) {
+    
+    if (result.success) {
+      const usuarioLogado = JSON.parse(localStorage.getItem('@AtendimentoTorres:user'))?.nome || 'Balcão';
+      let acaoDetalhe = '';
+      
+      if (campo === 'comprado') {
+        acaoDetalhe = valor ? 'Marcou a encomenda como Comprada' : 'Desmarcou a encomenda como Comprada';
+      } else if (campo === 'entregue') {
+        acaoDetalhe = valor ? 'Confirmou a Entrega ao cliente' : 'Desmarcou a Entrega';
+      }
+      
+      await AuditoriaRepository.registrarAuditoria(usuarioLogado, 'EDITOU', encomenda.produto, acaoDetalhe);
+    } else {
       alert('Erro ao atualizar a encomenda.');
     }
   };
@@ -55,7 +70,6 @@ export default function EncomendasBoard() {
       mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Referente à sua encomenda de ${enc.quantidade || '1'}x ${enc.produto}...`;
     }
 
-    // Abre a API oficial do WhatsApp já com texto pronto
     const url = `https://wa.me/55${numeroLimpo}?text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank');
   };

@@ -45,6 +45,7 @@ export default function AuditoriaBoard() {
       case 'LOGIN': 
       case 'LOGOUT': return { backgroundColor: '#fef9c3', color: '#854d0e' }; // Amarelo
       case 'ACESSO': return { backgroundColor: '#f3f4f6', color: '#374151' }; // Cinza
+      case 'PESQUISA': return { backgroundColor: '#f3e8ff', color: '#7e22ce' }; // Roxo
       default: return { backgroundColor: '#f1f5f9', color: '#475569' };
     }
   };

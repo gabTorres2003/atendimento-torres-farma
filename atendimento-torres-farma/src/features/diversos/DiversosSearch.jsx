@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Search as SearchIcon } from 'lucide-react';
 import { useAuth } from '../../core/hooks/useAuth';
+import { AuditoriaRepository } from '../../infrastructure/supabase/repositories/AuditoriaRepository';
+import DiversosForm from './DiversosForm';
 import { DiversosRepository } from '../../infrastructure/supabase/repositories/DiversosRepository';
 import DiversosForm from './DiversosForm';
 import { Card } from '../../shared/components/cards/Card';
@@ -36,7 +38,18 @@ export default function DiversosSearch() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    
+    if (termoBusca.trim() !== '') {
+      const usuarioLogado = user?.nome || 'Balcão';
+      AuditoriaRepository.registrarAcesso(usuarioLogado, 'PESQUISA', `Buscou por: "${termoBusca}" no módulo Diversos`);
+    }
+
     fetchMedicamentos(termoBusca);
+  };
+
+  const handleOpenModal = (medicamento = null) => {
+    setMedicamentoEdit(medicamento);
+    setIsModalOpen(true);
   };
 
   const handleOpenModal = (medicamento = null) => {
