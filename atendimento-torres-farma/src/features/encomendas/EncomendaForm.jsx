@@ -16,7 +16,7 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
   
   const isEditing = !!encomenda;
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
     defaultValues: { 
       status: 'Pendente de Compra',
       fornecedor: '',
@@ -24,11 +24,10 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
       pagamento: 'Receber na entrega',
       comprado: false,
       entregue: false,
-      data_encomenda: new Date().toISOString().split('T')[0]
+      data_encomenda: new Date().toISOString().split('T')[0],
+      data_compra: ''
     }
   });
-
-  const compradoWatch = watch('comprado');
 
   useEffect(() => {
     if (isEditing) {
@@ -44,12 +43,6 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
       setValue('data_compra', encomenda.data_compra ? encomenda.data_compra.split('T')[0] : '');
     }
   }, [encomenda, isEditing, setValue]);
-
-  useEffect(() => {
-    if (compradoWatch && !watch('data_compra')) {
-      setValue('data_compra', new Date().toISOString().split('T')[0]);
-    }
-  }, [compradoWatch, setValue, watch]);
 
   const onSubmit = async (data) => {
     setFormError('');
@@ -92,76 +85,18 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
           <FormError message={formError} />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <FormInput
-              label="Nome do Cliente *"
-              id="cliente"
-              type="text"
-              placeholder="Ex: João"
-              register={register('cliente', { required: 'O nome é obrigatório' })}
-              error={errors.cliente}
-            />
-
-            <FormInput
-              label="Telefone / WhatsApp *"
-              id="telefone"
-              type="text"
-              maxLength={11}
-              inputMode="numeric"
-              placeholder="Ex: 22999999999"
-              register={register('telefone', { 
-                required: 'O telefone é obrigatório',
-                pattern: { value: /^[0-9]{11}$/, message: 'Digite o DDD e o número (exatos 11 números)' }
-              })}
-              error={errors.telefone}
-            />
+            <FormInput label="Nome do Cliente *" id="cliente" type="text" placeholder="Ex: João" register={register('cliente', { required: 'O nome é obrigatório' })} error={errors.cliente} />
+            <FormInput label="Telefone / WhatsApp *" id="telefone" type="text" maxLength={11} inputMode="numeric" placeholder="Ex: 22999999999" register={register('telefone', { required: 'O telefone é obrigatório', pattern: { value: /^[0-9]{11}$/, message: 'Digite o DDD e o número (exatos 11 números)' } })} error={errors.telefone} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: '16px' }}>
-            <FormInput
-              label="Produto Desejado *"
-              id="produto"
-              type="text"
-              placeholder="Ex: Losartana"
-              register={register('produto', { required: 'O produto é obrigatório' })}
-              error={errors.produto}
-            />
-            <FormInput
-              label="Qtd *"
-              id="quantidade"
-              type="number"
-              register={register('quantidade', { required: 'A quantidade é obrigatória' })}
-              error={errors.quantidade}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '24px', padding: '16px', backgroundColor: 'var(--color-background-alt)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', cursor: 'pointer', color: 'var(--color-primary)' }}>
-              <input type="checkbox" {...register('comprado')} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-              Comprado
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', cursor: 'pointer', color: '#166534' }}>
-              <input type="checkbox" {...register('entregue')} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-              Confirmar Entrega
-            </label>
+            <FormInput label="Produto Desejado *" id="produto" type="text" placeholder="Ex: Losartana" register={register('produto', { required: 'O produto é obrigatório' })} error={errors.produto} />
+            <FormInput label="Qtd *" id="quantidade" type="number" register={register('quantidade', { required: 'A quantidade é obrigatória' })} error={errors.quantidade} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <FormInput
-              label="Data da Encomenda *"
-              id="data_encomenda"
-              type="date"
-              register={register('data_encomenda', { required: 'A data é obrigatória' })}
-              error={errors.data_encomenda}
-            />
-            <FormInput
-              label="Data da Compra"
-              id="data_compra"
-              type="date"
-              register={register('data_compra')}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <FormInput label="Data da Encomenda *" id="data_encomenda" type="date" register={register('data_encomenda', { required: 'A data é obrigatória' })} error={errors.data_encomenda} />
+            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Pagamento</label>
               <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('pagamento')}>
@@ -170,18 +105,38 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
                 <option value="Pagamento Parcial">Pagamento Parcial</option>
               </select>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Fornecedor Solicitado</label>
-              <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('fornecedor')}>
-                <option value="">Selecione um fornecedor...</option>
-                <option value="Panpharma">Panpharma</option>
-                <option value="Profarma">Profarma</option>
-                <option value="SantaCruz">SantaCruz</option>
-                <option value="Outro">Outro</option>
-              </select>
-            </div>
           </div>
+
+          {/* Oculta os dados do comprador no momento do cadastro inicial */}
+          {isEditing && (
+            <>
+              <div style={{ display: 'flex', gap: '24px', padding: '16px', backgroundColor: 'var(--color-background-alt)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', cursor: 'pointer', color: 'var(--color-primary)' }}>
+                  <input type="checkbox" {...register('comprado')} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                  Comprado
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', cursor: 'pointer', color: '#166534' }}>
+                  <input type="checkbox" {...register('entregue')} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                  Confirmar Entrega
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <FormInput label="Data da Compra" id="data_compra" type="date" register={register('data_compra')} />
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Fornecedor Solicitado</label>
+                  <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('fornecedor')}>
+                    <option value="">Selecione um fornecedor...</option>
+                    <option value="Panpharma">Panpharma</option>
+                    <option value="Profarma">Profarma</option>
+                    <option value="SantaCruz">SantaCruz</option>
+                    <option value="Outro">Outro</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <Button type="button" onClick={onClose} variant="secondary">Cancelar</Button>
