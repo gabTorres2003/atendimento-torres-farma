@@ -25,7 +25,10 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
       comprado: false,
       entregue: false,
       data_encomenda: new Date().toISOString().split('T')[0],
-      data_compra: ''
+      data_compra: '',
+      codigo_produto: '',
+      data_prevista: '',
+      fornecedor_sugerido: ''
     }
   });
 
@@ -41,6 +44,10 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
       setValue('comprado', encomenda.comprado || false);
       setValue('entregue', encomenda.entregue || false);
       setValue('data_compra', encomenda.data_compra ? encomenda.data_compra.split('T')[0] : '');
+      
+      setValue('codigo_produto', encomenda.codigo_produto || '');
+      setValue('data_prevista', encomenda.data_prevista ? encomenda.data_prevista.split('T')[0] : '');
+      setValue('fornecedor_sugerido', encomenda.fornecedor_sugerido || '');
     }
   }, [encomenda, isEditing, setValue]);
 
@@ -51,7 +58,8 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
       ...data,
       vendedor: isEditing ? encomenda.vendedor : (user?.nome || 'Balcão'),
       data_compra: data.data_compra === '' ? null : data.data_compra,
-      fornecedor: data.fornecedor === '' ? null : data.fornecedor
+      fornecedor: data.fornecedor === '' ? null : data.fornecedor,
+      data_prevista: data.data_prevista === '' ? null : data.data_prevista
     };
 
     if (isEditing) {
@@ -73,7 +81,7 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
       backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px'
     }}>
-      <Card style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
+      <Card style={{ width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
             {isEditing ? 'Editar Encomenda' : 'Nova Encomenda'}
@@ -91,14 +99,18 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
             <FormInput label="Telefone / WhatsApp *" id="telefone" type="text" maxLength={11} inputMode="numeric" placeholder="Ex: 22999999999" register={register('telefone', { required: 'O telefone é obrigatório', pattern: { value: /^[0-9]{11}$/, message: 'Digite o DDD e o número (exatos 11 números)' } })} error={errors.telefone} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px' }}>
             <FormInput label="Produto Desejado *" id="produto" type="text" placeholder="Ex: Losartana" register={register('produto', { required: 'O produto é obrigatório' })} error={errors.produto} />
+            <FormInput label="Cód Produto" id="codigo_produto" type="text" placeholder="Ex: 100460" register={register('codigo_produto')} />
             <FormInput label="Qtd *" id="quantidade" type="number" register={register('quantidade', { required: 'A quantidade é obrigatória' })} error={errors.quantidade} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <FormInput label="Data da Encomenda *" id="data_encomenda" type="date" register={register('data_encomenda', { required: 'A data é obrigatória' })} error={errors.data_encomenda} />
-            
+            <FormInput label="Data Prevista p/ Entrega" id="data_prevista" type="date" register={register('data_prevista')} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Pagamento</label>
               <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('pagamento')}>
@@ -107,11 +119,22 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
                 <option value="Pagamento Parcial">Pagamento Parcial</option>
               </select>
             </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Fornecedor Sugerido</label>
+              <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('fornecedor_sugerido')}>
+                <option value="">Nenhum...</option>
+                <option value="Panpharma">Panpharma</option>
+                <option value="Profarma">Profarma</option>
+                <option value="SantaCruz">SantaCruz</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
           </div>
 
           {isEditing && (
             <>
-              <div style={{ display: 'flex', gap: '24px', padding: '16px', backgroundColor: 'var(--color-background-alt)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', gap: '24px', padding: '16px', backgroundColor: 'var(--color-background-alt)', borderRadius: '8px', border: '1px solid var(--color-border)', marginTop: '8px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', cursor: 'pointer', color: 'var(--color-primary)' }}>
                   <input type="checkbox" {...register('comprado')} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                   Comprado
@@ -123,10 +146,10 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <FormInput label="Data da Compra" id="data_compra" type="date" register={register('data_compra')} />
+                <FormInput label="Data da Compra Realizada" id="data_compra" type="date" register={register('data_compra')} />
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Fornecedor Solicitado</label>
+                  <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Fornecedor da Compra</label>
                   <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('fornecedor')}>
                     <option value="">Selecione um fornecedor...</option>
                     <option value="Panpharma">Panpharma</option>

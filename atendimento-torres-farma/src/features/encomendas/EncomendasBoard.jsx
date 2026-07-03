@@ -62,26 +62,25 @@ export default function EncomendasBoard() {
         )}
 
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1000px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1200px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <th style={{ padding: '12px 16px' }}>Data Enc.</th>
-                <th style={{ padding: '12px 16px' }}>Cliente</th>
-                <th style={{ padding: '12px 16px' }}>Produto</th>
-                <th style={{ padding: '12px 16px' }}>Qtd</th>
-                <th style={{ padding: '12px 16px' }}>Fornecedor</th>
-                <th style={{ padding: '12px 16px' }}>Data Compra</th>
-                <th style={{ padding: '12px 16px' }}>Pagamento</th>
-                <th style={{ padding: '12px 16px' }}>Acompanhamento</th>
-                <th style={{ padding: '12px 16px' }}>Status</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ações</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Datas (Enc/Prev)</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Cliente</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Produto</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Qtd</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Fornecedor</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Pagamento</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Acompanhamento</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Status</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading && encomendasVisiveis.length === 0 ? (
-                <tr><td colSpan="10" style={{ padding: '16px', textAlign: 'center' }}>Carregando...</td></tr>
+                <tr><td colSpan="9" style={{ padding: '16px', textAlign: 'center' }}>Carregando...</td></tr>
               ) : encomendasVisiveis.length === 0 ? (
-                <tr><td colSpan="10" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <tr><td colSpan="9" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   {abaAtiva === 'pendentes' ? 'Nenhuma encomenda pendente no momento!' : 'Nenhuma encomenda concluída encontrada na busca.'}
                 </td></tr>
               ) : (
@@ -89,8 +88,18 @@ export default function EncomendasBoard() {
                   const statusInfo = getStatusInfo(enc);
                   return (
                     <tr key={enc.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{formatData(enc.data_encomenda)}</td>
-                      <td style={{ padding: '12px 16px' }}>
+                      
+                      {/* Datas agrupadas para não quebrar layout */}
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: '500' }}>{formatData(enc.data_encomenda)}</div>
+                        {enc.data_prevista && (
+                          <div style={{ fontSize: '0.8rem', color: '#ea580c', fontWeight: 'bold', marginTop: '2px' }}>
+                            Prev: {formatData(enc.data_prevista)}
+                          </div>
+                        )}
+                      </td>
+                      
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                         <div style={{ fontWeight: 'bold' }}>{enc.cliente}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                           {enc.telefone || '-'}
@@ -101,11 +110,36 @@ export default function EncomendasBoard() {
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{enc.produto}</td>
-                      <td style={{ padding: '12px 16px' }}>{enc.quantidade || '1'}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '0.9rem' }}>{enc.fornecedor || '-'}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{enc.data_compra ? formatData(enc.data_compra) : '-'}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '0.9rem' }}>{enc.pagamento || '-'}</td>
+
+                      {/* Produto com minWidth para impedir quebra feia */}
+                      <td style={{ padding: '12px 16px', minWidth: '220px' }}>
+                        <div style={{ fontWeight: 'bold', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4' }}>{enc.produto}</div>
+                        {enc.codigo_produto && (
+                          <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', marginTop: '4px', fontWeight: '500' }}>
+                            Cód: {enc.codigo_produto}
+                          </div>
+                        )}
+                      </td>
+                      
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{enc.quantidade || '1'}</td>
+                      
+                      {/* Fornecedores agrupados */}
+                      <td style={{ padding: '12px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: enc.fornecedor ? 'bold' : 'normal', color: enc.fornecedor ? 'inherit' : 'var(--color-text-muted)' }}>
+                          {enc.fornecedor || 'Sem Compra'}
+                        </div>
+                        {enc.data_compra && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>{formatData(enc.data_compra)}</div>
+                        )}
+                        {enc.fornecedor_sugerido && !enc.fornecedor && (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                            Sug: {enc.fornecedor_sugerido}
+                          </div>
+                        )}
+                      </td>
+                      
+                      <td style={{ padding: '12px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{enc.pagamento || '-'}</td>
+                      
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
@@ -122,11 +156,13 @@ export default function EncomendasBoard() {
                           </label>
                         </div>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', whiteSpace: 'nowrap', ...statusInfo.cor }}>
+
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                        <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', ...statusInfo.cor }}>
                           {statusInfo.texto}
                         </span>
                       </td>
+                      
                       <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button onClick={() => handleOpenModal(enc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: '16px' }}>
                           <Edit size={18} />
@@ -144,7 +180,6 @@ export default function EncomendasBoard() {
         </div>
       </Card>
 
-      {/* Modal de Confirmação de Compra */}
       {compraModal.isOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
             <Card style={{ width: '100%', maxWidth: '400px' }}>

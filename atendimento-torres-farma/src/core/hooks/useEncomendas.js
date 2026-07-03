@@ -28,10 +28,9 @@ export const useEncomendas = () => {
         let detalhes = '';
         if (encomendaAntiga) {
            if (encomendaAntiga.status !== encomendaData.status) detalhes += `Status: ${encomendaAntiga.status} -> ${encomendaData.status}. `;
-           if (encomendaAntiga.fornecedor !== encomendaData.fornecedor) detalhes += `Fornecedor: ${encomendaAntiga.fornecedor || 'N/A'} -> ${encomendaData.fornecedor || 'N/A'}. `;
+           if (encomendaAntiga.fornecedor !== encomendaData.fornecedor) detalhes += `Fornecedor Compra: ${encomendaAntiga.fornecedor || 'N/A'} -> ${encomendaData.fornecedor || 'N/A'}. `;
            if (encomendaAntiga.produto !== encomendaData.produto) detalhes += `Produto: ${encomendaAntiga.produto} -> ${encomendaData.produto}. `;
            
-           // NOVAS VALIDAÇÕES DE AUDITORIA (CHECKS, QTD E PAGAMENTO)
            if (encomendaAntiga.comprado !== encomendaData.comprado) {
                detalhes += encomendaData.comprado ? 'Marcou a encomenda como Comprada. ' : 'Desmarcou a compra. ';
            }
@@ -43,6 +42,16 @@ export const useEncomendas = () => {
            }
            if (encomendaAntiga.pagamento !== encomendaData.pagamento) {
                detalhes += `Pagamento: ${encomendaAntiga.pagamento || 'Receber na entrega'} -> ${encomendaData.pagamento}. `;
+           }
+           
+           if (encomendaAntiga.codigo_produto !== encomendaData.codigo_produto) {
+               detalhes += `Código Prod: ${encomendaAntiga.codigo_produto || '-'} -> ${encomendaData.codigo_produto || '-'}. `;
+           }
+           if (encomendaAntiga.data_prevista !== encomendaData.data_prevista) {
+               detalhes += `Data Prevista: alterada. `;
+           }
+           if (encomendaAntiga.fornecedor_sugerido !== encomendaData.fornecedor_sugerido) {
+               detalhes += `Forn. Sugerido: ${encomendaAntiga.fornecedor_sugerido || '-'} -> ${encomendaData.fornecedor_sugerido || '-'}. `;
            }
         }
         
