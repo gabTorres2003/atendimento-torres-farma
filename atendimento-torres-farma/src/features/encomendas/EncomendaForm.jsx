@@ -50,6 +50,8 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
     const payload = {
       ...data,
       vendedor: isEditing ? encomenda.vendedor : (user?.nome || 'Balcão'),
+      data_compra: data.data_compra === '' ? null : data.data_compra,
+      fornecedor: data.fornecedor === '' ? null : data.fornecedor
     };
 
     if (isEditing) {
@@ -107,7 +109,6 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
             </div>
           </div>
 
-          {/* Oculta os dados do comprador no momento do cadastro inicial */}
           {isEditing && (
             <>
               <div style={{ display: 'flex', gap: '24px', padding: '16px', backgroundColor: 'var(--color-background-alt)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
