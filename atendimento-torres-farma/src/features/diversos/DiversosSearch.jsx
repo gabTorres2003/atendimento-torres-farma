@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Search as SearchIcon } from 'lucide-react';
-import { useDiversos } from '../../core/hooks/useDiversos';
 import { useAuth } from '../../core/hooks/useAuth';
+import { DiversosRepository } from '../../infrastructure/supabase/repositories/DiversosRepository';
 import DiversosForm from './DiversosForm';
 import { Card } from '../../shared/components/cards/Card';
 import { Button } from '../../shared/components/buttons/Button';
 
 export default function DiversosSearch() {
-  const { buscarTodos, deletarMedicamento } = useDiversos();
   const { user } = useAuth();
   const [medicamentos, setMedicamentos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [termoBusca, setTermoBusca] = useState('');
   
-  // Novos estados para os botões de filtro
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [filtroClassificacao, setFiltroClassificacao] = useState('');
   
@@ -23,7 +21,8 @@ export default function DiversosSearch() {
   const fetchMedicamentos = async (termo = '') => {
     setLoading(true);
     try {
-      const data = await buscarTodos(termo);
+      // BUSCA DIRETA NO BANCO PARA EVITAR O ERRO DA FUNÇÃO INEXISTENTE
+      const data = await DiversosRepository.buscarTodos(termo);
       setMedicamentos(data || []);
     } catch (error) {
       console.error('Erro ao buscar medicamentos:', error);
@@ -48,12 +47,16 @@ export default function DiversosSearch() {
 
   const handleDelete = async (id, produto) => {
     if (window.confirm(`Tem certeza que deseja excluir permanentemente ${produto}?`)) {
-      await deletarMedicamento(id);
-      fetchMedicamentos(termoBusca);
+      try {
+        await DiversosRepository.deletar(id);
+        fetchMedicamentos(termoBusca);
+      } catch (error) {
+        console.error('Erro ao deletar:', error);
+        alert('Erro ao excluir medicamento.');
+      }
     }
   };
 
-  // Lógica matemática do filtro (cruza as informações selecionadas)
   const medicamentosFiltrados = medicamentos.filter((med) => {
     const passouCategoria = filtroCategoria ? med.categoria === filtroCategoria : true;
     const passouClassificacao = filtroClassificacao ? med.classificacao === filtroClassificacao : true;
@@ -76,7 +79,6 @@ export default function DiversosSearch() {
       </div>
 
       <Card>
-        {/* Barra de Pesquisa */}
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <SearchIcon size={20} color="var(--color-text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -93,7 +95,6 @@ export default function DiversosSearch() {
           </Button>
         </form>
 
-        {/* Botões de Filtro */}
         <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', flexWrap: 'wrap', padding: '12px', backgroundColor: 'var(--color-background-alt)', borderRadius: '8px' }}>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -150,7 +151,6 @@ export default function DiversosSearch() {
 
         </div>
 
-        {/* Tabela de Resultados */}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
