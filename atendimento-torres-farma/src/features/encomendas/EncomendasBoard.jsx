@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, MessageCircle } from 'lucide-react';
 import { useEncomendas } from '../../core/hooks/useEncomendas';
-import { AuditoriaRepository } from '../../infrastructure/supabase/repositories/AuditoriaRepository';
 import EncomendaForm from './EncomendaForm';
 import { Card } from '../../shared/components/cards/Card';
 import { Button } from '../../shared/components/buttons/Button';
@@ -35,18 +34,7 @@ export default function EncomendasBoard() {
     
     const result = await salvarEncomenda(payload, encomenda);
     
-    if (result.success) {
-      const usuarioLogado = JSON.parse(localStorage.getItem('@AtendimentoTorres:user'))?.nome || 'Balcão';
-      let acaoDetalhe = '';
-      
-      if (campo === 'comprado') {
-        acaoDetalhe = valor ? 'Marcou a encomenda como Comprada' : 'Desmarcou a encomenda como Comprada';
-      } else if (campo === 'entregue') {
-        acaoDetalhe = valor ? 'Confirmou a Entrega ao cliente' : 'Desmarcou a Entrega';
-      }
-      
-      await AuditoriaRepository.registrarAuditoria(usuarioLogado, 'EDITOU', encomenda.produto, acaoDetalhe);
-    } else {
+    if (!result.success) {
       alert('Erro ao atualizar a encomenda.');
     }
   };
@@ -56,20 +44,15 @@ export default function EncomendasBoard() {
       alert('Esta encomenda não possui um telefone cadastrado.');
       return;
     }
-
-    // Remove qualquer traço, espaço ou parênteses do número
     const numeroLimpo = enc.telefone.replace(/\D/g, '');
-    
-    // Mensagem dinâmica baseada no status
     let mensagem = '';
     if (enc.entregue) {
       mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Passando para confirmar que a entrega da sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} foi concluída. Muito obrigado pela preferência!`;
     } else if (enc.comprado) {
-      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Boas notícias: sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} já chegou e está separada para você! Podemos agendar a entrega ou você prefere passar para retirar?`;
+      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Boas notícias: sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} já chegou e está separada para você!`;
     } else {
       mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Referente à sua encomenda de ${enc.quantidade || '1'}x ${enc.produto}...`;
     }
-
     const url = `https://wa.me/55${numeroLimpo}?text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank');
   };
@@ -137,7 +120,6 @@ export default function EncomendasBoard() {
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ fontWeight: 'bold' }}>{enc.cliente}</div>
                         
-                        {/* Botão do WhatsApp Inserido Aqui */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                           {enc.telefone || '-'}
                           {enc.telefone && (

@@ -30,7 +30,20 @@ export const useEncomendas = () => {
            if (encomendaAntiga.status !== encomendaData.status) detalhes += `Status: ${encomendaAntiga.status} -> ${encomendaData.status}. `;
            if (encomendaAntiga.fornecedor !== encomendaData.fornecedor) detalhes += `Fornecedor: ${encomendaAntiga.fornecedor || 'N/A'} -> ${encomendaData.fornecedor || 'N/A'}. `;
            if (encomendaAntiga.produto !== encomendaData.produto) detalhes += `Produto: ${encomendaAntiga.produto} -> ${encomendaData.produto}. `;
-           if (encomendaAntiga.data_encomenda !== encomendaData.data_encomenda) detalhes += `Data: ${encomendaAntiga.data_encomenda} -> ${encomendaData.data_encomenda}. `;
+           
+           // NOVAS VALIDAÇÕES DE AUDITORIA (CHECKS, QTD E PAGAMENTO)
+           if (encomendaAntiga.comprado !== encomendaData.comprado) {
+               detalhes += encomendaData.comprado ? 'Marcou a encomenda como Comprada. ' : 'Desmarcou a compra. ';
+           }
+           if (encomendaAntiga.entregue !== encomendaData.entregue) {
+               detalhes += encomendaData.entregue ? 'Confirmou a Entrega ao cliente. ' : 'Desmarcou a Entrega. ';
+           }
+           if (encomendaAntiga.quantidade !== encomendaData.quantidade) {
+               detalhes += `Quantidade: ${encomendaAntiga.quantidade || '1'} -> ${encomendaData.quantidade}. `;
+           }
+           if (encomendaAntiga.pagamento !== encomendaData.pagamento) {
+               detalhes += `Pagamento: ${encomendaAntiga.pagamento || 'Receber na entrega'} -> ${encomendaData.pagamento}. `;
+           }
         }
         
         if (detalhes !== '') {
