@@ -25,11 +25,18 @@ export default function EncomendasBoard() {
     }
   };
 
-  const handleStatusChange = async (encomenda, novoStatus) => {
-    const payload = { ...encomenda, status: novoStatus };
+  // Interação direta com os checkboxes na tabela
+  const handleCheckboxChange = async (encomenda, campo, valor) => {
+    const payload = { ...encomenda, [campo]: valor };
+    
+    // Regra: Se marcou como comprado pela tabela, gera a data de compra automaticamente
+    if (campo === 'comprado' && valor && !payload.data_compra) {
+      payload.data_compra = new Date().toISOString().split('T')[0];
+    }
+    
     const result = await salvarEncomenda(payload, encomenda);
     if (!result.success) {
-      alert('Erro ao atualizar o status da encomenda.');
+      alert('Erro ao atualizar a encomenda.');
     }
   };
 
@@ -42,16 +49,26 @@ export default function EncomendasBoard() {
     return dataIso;
   };
 
-  // Cores dinâmicas baseadas no checklist
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'Pendente de Compra': return { backgroundColor: '#fef3c7', color: '#b45309' }; // Amarelo
-      case 'Comprado': return { backgroundColor: '#e0f2fe', color: '#0369a1' }; // Azul
-      case 'Pendente de Entrega': return { backgroundColor: '#fae8ff', color: '#86198f' }; // Roxo
-      case 'Concluída': return { backgroundColor: '#dcfce7', color: '#166534' }; // Verde
-      default: return { backgroundColor: '#f1f5f9', color: '#475569' };
-    }
+  // Lógica inteligente de Status baseada nos Checks
+  const getStatusInfo = (enc) => {
+    if (enc.entregue) return { texto: 'Concluída', cor: { backgroundColor: '#dcfce7', color: '#166534' } };
+    if (enc.comprado) return { texto: 'Pendente de Entrega', cor: { backgroundColor: '#e0f2fe', color: '#0369a1' } };
+    return { texto: 'Pendente de Compra', cor: { backgroundColor: '#fef3c7', color: '#b45309' } };
   };
+
+  // Ordenação: Pendentes no topo (por data), Concluídas no fim
+  const encomendasOrdenadas = [...encomendas].sort((a, b) => {
+    const aPendente = !a.entregue;
+    const bPendente = !b.entregue;
+    
+    if (aPendente && !bPendente) return -1;
+    if (!aPendente && bPendente) return 1;
+    
+    // Se ambos forem pendentes ou ambos concluídos, ordena pela data mais nova
+    const dataA = new Date(a.data_encomenda || 0);
+    const dataB = new Date(b.data_encomenda || 0);
+    return dataB - dataA;
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -69,62 +86,78 @@ export default function EncomendasBoard() {
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <th style={{ padding: '12px 16px' }}>Data</th>
                 <th style={{ padding: '12px 16px' }}>Cliente</th>
-                <th style={{ padding: '12px 16px' }}>Telefone</th>
                 <th style={{ padding: '12px 16px' }}>Produto</th>
+                <th style={{ padding: '12px 16px' }}>Qtd</th>
+                <th style={{ padding: '12px 16px' }}>Pagamento</th>
+                <th style={{ padding: '12px 16px' }}>Acompanhamento</th>
                 <th style={{ padding: '12px 16px' }}>Status</th>
-                <th style={{ padding: '12px 16px' }}>Fornecedor</th>
-                <th style={{ padding: '12px 16px' }}>Vendedor</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
-              {loading && encomendas.length === 0 ? (
+              {loading && encomendasOrdenadas.length === 0 ? (
                 <tr><td colSpan="8" style={{ padding: '16px', textAlign: 'center' }}>Carregando...</td></tr>
-              ) : encomendas.length === 0 ? (
+              ) : encomendasOrdenadas.length === 0 ? (
                 <tr><td colSpan="8" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhuma encomenda encontrada.</td></tr>
               ) : (
-                encomendas.map((enc) => (
-                  <tr key={enc.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={{ padding: '12px 16px' }}>{formatData(enc.data_encomenda)}</td>
-                    <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{enc.cliente}</td>
-                    <td style={{ padding: '12px 16px' }}>{enc.telefone || '-'}</td>
-                    <td style={{ padding: '12px 16px' }}>{enc.produto}</td>
-                    
-                    {/* Select mapeado com as opções do checklist */}
-                    <td style={{ padding: '12px 16px' }}>
-                      <select
-                        value={enc.status}
-                        onChange={(e) => handleStatusChange(enc, e.target.value)}
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '0.8rem',
-                          fontWeight: 'bold',
-                          border: '1px solid transparent',
-                          cursor: 'pointer',
-                          outline: 'none',
-                          ...getStatusStyle(enc.status)
-                        }}
-                      >
-                        <option value="Pendente de Compra" style={{backgroundColor: '#fff', color: '#000'}}>Pendente de Compra</option>
-                        <option value="Comprado" style={{backgroundColor: '#fff', color: '#000'}}>Comprado</option>
-                        <option value="Pendente de Entrega" style={{backgroundColor: '#fff', color: '#000'}}>Pendente de Entrega</option>
-                        <option value="Concluída" style={{backgroundColor: '#fff', color: '#000'}}>Concluída</option>
-                      </select>
-                    </td>
+                encomendasOrdenadas.map((enc) => {
+                  const statusInfo = getStatusInfo(enc);
+                  return (
+                    <tr key={enc.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td style={{ padding: '12px 16px' }}>{formatData(enc.data_encomenda)}</td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ fontWeight: 'bold' }}>{enc.cliente}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{enc.telefone}</div>
+                      </td>
+                      <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{enc.produto}</td>
+                      <td style={{ padding: '12px 16px' }}>{enc.quantidade || '1'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '0.9rem' }}>{enc.pagamento || '-'}</td>
+                      
+                      {/* Checkboxes de Controle Direto */}
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={enc.comprado || false} 
+                              onChange={(e) => handleCheckboxChange(enc, 'comprado', e.target.checked)}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontSize: '0.85rem', color: enc.comprado ? 'var(--color-primary)' : 'inherit', fontWeight: enc.comprado ? 'bold' : 'normal' }}>
+                              Comprado
+                            </span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={enc.entregue || false} 
+                              onChange={(e) => handleCheckboxChange(enc, 'entregue', e.target.checked)}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontSize: '0.85rem', color: enc.entregue ? '#166534' : 'inherit', fontWeight: enc.entregue ? 'bold' : 'normal' }}>
+                              Confirmar Entrega
+                            </span>
+                          </label>
+                        </div>
+                      </td>
 
-                    <td style={{ padding: '12px 16px' }}>{enc.fornecedor || '-'}</td>
-                    <td style={{ padding: '12px 16px' }}>{enc.vendedor || '-'}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                      <button onClick={() => handleOpenModal(enc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: '16px' }}>
-                        <Edit size={18} />
-                      </button>
-                      <button onClick={() => handleDelete(enc.id, enc.produto)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      <td style={{ padding: '12px 16px' }}>
+                        <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', ...statusInfo.cor }}>
+                          {statusInfo.texto}
+                        </span>
+                      </td>
+                      
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                        <button onClick={() => handleOpenModal(enc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: '16px' }}>
+                          <Edit size={18} />
+                        </button>
+                        <button onClick={() => handleDelete(enc.id, enc.produto)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
