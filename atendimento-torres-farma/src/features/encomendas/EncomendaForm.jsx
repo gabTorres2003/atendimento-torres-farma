@@ -117,6 +117,7 @@ export default function EncomendaForm({ encomenda, onClose, onSaved }) {
                 <option value="Receber na entrega">Receber na entrega</option>
                 <option value="Pago">Pago</option>
                 <option value="Pagamento Parcial">Pagamento Parcial</option>
+                <option value="Crediário">Crediário</option>
               </select>
             </div>
 
