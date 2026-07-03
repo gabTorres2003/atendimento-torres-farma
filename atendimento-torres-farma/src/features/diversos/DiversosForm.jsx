@@ -46,7 +46,7 @@ export default function DiversosForm({ medicamento, onClose, onSaved }) {
     
     if (result.success) {
       if (!isEditing) {
-        alert(`Medicamento salvo com sucesso!\nO código/gaveta gerado foi: ${result.codigoGerado}`);
+        alert(`Medicamento salvo com sucesso!\nO código gerado foi: ${result.codigoGerado}`);
       }
       onSaved();
       onClose();
@@ -104,7 +104,7 @@ export default function DiversosForm({ medicamento, onClose, onSaved }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
             {isEditing && (
               <FormInput
-                label="Código / Gaveta"
+                label="Código"
                 id="codigo_diversos"
                 type="text"
                 readOnly
@@ -113,7 +113,7 @@ export default function DiversosForm({ medicamento, onClose, onSaved }) {
             )}
             {!isEditing && (
               <div style={{ display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem', padding: '8px' }}>
-                * O Código / Gaveta será gerado automaticamente.
+                * O Código será gerado automaticamente.
               </div>
             )}
           </div>

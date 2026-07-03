@@ -21,7 +21,6 @@ export default function DiversosSearch() {
   const fetchMedicamentos = async (termo = '') => {
     setLoading(true);
     try {
-      // BUSCA DIRETA NO BANCO PARA EVITAR O ERRO DA FUNÇÃO INEXISTENTE
       const data = await DiversosRepository.buscarTodos(termo);
       setMedicamentos(data || []);
     } catch (error) {
@@ -126,7 +125,8 @@ export default function DiversosSearch() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>Filtrar por Classificação:</span>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {['', 'Genérico', 'Ético', 'Similar'].map(clas => (
+              {/* Opção "Similar" Removida Aqui */}
+              {['', 'Genérico', 'Ético'].map(clas => (
                 <button
                   key={`clas-${clas}`}
                   type="button"
@@ -155,7 +155,7 @@ export default function DiversosSearch() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <th style={{ padding: '12px 16px', width: '120px' }}>Código / Gaveta</th>
+                <th style={{ padding: '12px 16px', width: '120px' }}>Código</th>
                 <th style={{ padding: '12px 16px' }}>Produto</th>
                 <th style={{ padding: '12px 16px' }}>Categoria</th>
                 <th style={{ padding: '12px 16px' }}>Classificação</th>
