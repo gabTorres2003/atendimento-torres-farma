@@ -50,7 +50,7 @@ export default function EncomendasBoard() {
     if (enc.entregue) {
       mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Passando para confirmar que a entrega da sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} foi concluída. Muito obrigado pela preferência!`;
     } else if (enc.comprado) {
-      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Boas notícias: sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} já chegou e está separada para você!`;
+      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Boas notícias: sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} já chegou e está separada para você! Podemos agendar a entrega ou você prefere passar para retirar?`;
     } else {
       mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Referente à sua encomenda de ${enc.quantidade || '1'}x ${enc.produto}...`;
     }
