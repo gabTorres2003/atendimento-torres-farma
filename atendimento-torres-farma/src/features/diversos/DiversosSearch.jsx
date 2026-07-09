@@ -18,13 +18,12 @@ export default function DiversosSearch() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicamentoEdit, setMedicamentoEdit] = useState(null);
-
   const [copiadoId, setCopiadoId] = useState(null);
 
-  const fetchMedicamentos = async (termo = '') => {
+  const fetchMedicamentos = async () => {
     setLoading(true);
     try {
-      const data = await DiversosRepository.buscarTodos(termo);
+      const data = await DiversosRepository.buscarTodos();
       setMedicamentos(data || []);
     } catch (error) {
       console.error('Erro ao buscar medicamentos:', error);
@@ -39,13 +38,10 @@ export default function DiversosSearch() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    
     if (termoBusca.trim() !== '') {
       const usuarioLogado = user?.nome || 'Balcão';
       AuditoriaRepository.registrarAcesso(usuarioLogado, 'PESQUISA', `Buscou por: "${termoBusca}" no módulo Diversos`);
     }
-
-    fetchMedicamentos(termoBusca);
   };
 
   const handleOpenModal = (medicamento = null) => {
@@ -57,7 +53,7 @@ export default function DiversosSearch() {
     if (window.confirm(`Tem certeza que deseja excluir permanentemente ${produto}?`)) {
       try {
         await DiversosRepository.deletar(id);
-        fetchMedicamentos(termoBusca);
+        fetchMedicamentos(); // Recarrega após excluir
       } catch (error) {
         console.error('Erro ao deletar:', error);
         alert('Erro ao excluir medicamento.');
@@ -74,7 +70,23 @@ export default function DiversosSearch() {
   const medicamentosFiltrados = medicamentos.filter((med) => {
     const passouCategoria = filtroCategoria ? med.categoria === filtroCategoria : true;
     const passouClassificacao = filtroClassificacao ? med.classificacao === filtroClassificacao : true;
-    return passouCategoria && passouClassificacao;
+    
+    let passouTexto = true;
+    if (termoBusca) {
+      const termo = termoBusca.toLowerCase().trim();
+      const termoSemEspaco = termo.replace(/\s/g, '');
+      
+      const nomeRemedio = (med.produto || '').toLowerCase();
+      const codigoNumero = String(med.codigo_diversos || '');
+      const codigoFormatado = `diversos${codigoNumero}`.toLowerCase();
+      
+      passouTexto = 
+        nomeRemedio.includes(termo) || 
+        codigoFormatado.includes(termoSemEspaco) || 
+        codigoNumero === termoSemEspaco;
+    }
+
+    return passouCategoria && passouClassificacao && passouTexto;
   });
 
   return (
@@ -98,7 +110,7 @@ export default function DiversosSearch() {
             <SearchIcon size={20} color="var(--color-text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
             <input
               type="text"
-              placeholder="Buscar por nome do medicamento ou número do diversos..."
+              placeholder="Buscar por nome do medicamento ou código (ex: DIVERSOS220)..."
               value={termoBusca}
               onChange={(e) => setTermoBusca(e.target.value)}
               style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none', fontSize: '1rem' }}
@@ -180,7 +192,7 @@ export default function DiversosSearch() {
               {loading ? (
                 <tr><td colSpan={user?.role === 'admin' ? 5 : 4} style={{ padding: '16px', textAlign: 'center' }}>Carregando...</td></tr>
               ) : medicamentosFiltrados.length === 0 ? (
-                <tr><td colSpan={user?.role === 'admin' ? 5 : 4} style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhum medicamento encontrado para este filtro.</td></tr>
+                <tr><td colSpan={user?.role === 'admin' ? 5 : 4} style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhum medicamento encontrado.</td></tr>
               ) : (
                 medicamentosFiltrados.map((med) => (
                   <tr key={med.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
@@ -244,7 +256,7 @@ export default function DiversosSearch() {
         <DiversosForm
           medicamento={medicamentoEdit}
           onClose={() => setIsModalOpen(false)}
-          onSaved={() => fetchMedicamentos(termoBusca)}
+          onSaved={() => fetchMedicamentos()}
         />
       )}
     </div>
