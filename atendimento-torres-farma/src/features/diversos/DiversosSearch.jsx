@@ -36,12 +36,23 @@ export default function DiversosSearch() {
     fetchMedicamentos();
   }, []);
 
+  // REGISTRO AUTOMÁTICO NA AUDITORIA
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (termoBusca.trim() !== '') {
+        const usuarioLogado = user?.nome || 'Balcão';
+        AuditoriaRepository.registrarAcesso(
+          usuarioLogado, 
+          'PESQUISA', 
+          `Buscou por: "${termoBusca}" no módulo Diversos`
+        );
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [termoBusca, user?.nome]);
+
   const handleSearch = (e) => {
     e.preventDefault();
-    if (termoBusca.trim() !== '') {
-      const usuarioLogado = user?.nome || 'Balcão';
-      AuditoriaRepository.registrarAcesso(usuarioLogado, 'PESQUISA', `Buscou por: "${termoBusca}" no módulo Diversos`);
-    }
   };
 
   const handleOpenModal = (medicamento = null) => {
@@ -53,7 +64,7 @@ export default function DiversosSearch() {
     if (window.confirm(`Tem certeza que deseja excluir permanentemente ${produto}?`)) {
       try {
         await DiversosRepository.deletar(id);
-        fetchMedicamentos(); // Recarrega após excluir
+        fetchMedicamentos();
       } catch (error) {
         console.error('Erro ao deletar:', error);
         alert('Erro ao excluir medicamento.');
@@ -74,16 +85,24 @@ export default function DiversosSearch() {
     let passouTexto = true;
     if (termoBusca) {
       const termo = termoBusca.toLowerCase().trim();
-      const termoSemEspaco = termo.replace(/\s/g, '');
+      const termoSemEspaco = termo.replace(/\s/g, ''); 
       
       const nomeRemedio = (med.produto || '').toLowerCase();
       const codigoNumero = String(med.codigo_diversos || '');
-      const codigoFormatado = `diversos${codigoNumero}`.toLowerCase();
       
-      passouTexto = 
-        nomeRemedio.includes(termo) || 
-        codigoFormatado.includes(termoSemEspaco) || 
-        codigoNumero === termoSemEspaco;
+      // Verifica se o funcionário buscou apenas por números ou "diversos + números"
+      const isBuscaPorCodigo = /^\d+$/.test(termoSemEspaco) || /^diversos\d+$/.test(termoSemEspaco);
+      
+      if (isBuscaPorCodigo) {
+        // Extrai apenas os números do texto digitado
+        const numeroBuscado = termoSemEspaco.replace(/\D/g, ''); 
+        
+        // REGRA RESTRITA: A gaveta tem que ser EXATAMENTE igual ao número buscado
+        passouTexto = (codigoNumero === numeroBuscado);
+      } else {
+        // Se buscar por letras, aceita a pesquisa parcial normalmente (Ex: "dip" = "dipirona")
+        passouTexto = nomeRemedio.includes(termo);
+      }
     }
 
     return passouCategoria && passouClassificacao && passouTexto;
@@ -110,7 +129,7 @@ export default function DiversosSearch() {
             <SearchIcon size={20} color="var(--color-text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
             <input
               type="text"
-              placeholder="Buscar por nome do medicamento ou código (ex: DIVERSOS220)..."
+              placeholder="Buscar por nome do medicamento ou código (ex: DIVERSOS22)..."
               value={termoBusca}
               onChange={(e) => setTermoBusca(e.target.value)}
               style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none', fontSize: '1rem' }}
