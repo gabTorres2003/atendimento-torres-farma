@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Search as SearchIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Search as SearchIcon, Copy } from 'lucide-react';
 import { useAuth } from '../../core/hooks/useAuth';
-import { AuditoriaRepository } from '../../infrastructure/supabase/repositories/AuditoriaRepository';
 import { DiversosRepository } from '../../infrastructure/supabase/repositories/DiversosRepository';
+import { AuditoriaRepository } from '../../infrastructure/supabase/repositories/AuditoriaRepository';
 import DiversosForm from './DiversosForm';
 import { Card } from '../../shared/components/cards/Card';
 import { Button } from '../../shared/components/buttons/Button';
@@ -18,6 +18,8 @@ export default function DiversosSearch() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [medicamentoEdit, setMedicamentoEdit] = useState(null);
+
+  const [copiadoId, setCopiadoId] = useState(null);
 
   const fetchMedicamentos = async (termo = '') => {
     setLoading(true);
@@ -61,6 +63,12 @@ export default function DiversosSearch() {
         alert('Erro ao excluir medicamento.');
       }
     }
+  };
+
+  const handleCopy = (codigo, id) => {
+    navigator.clipboard.writeText(`DIVERSOS${codigo}`);
+    setCopiadoId(id);
+    setTimeout(() => setCopiadoId(null), 2000); 
   };
 
   const medicamentosFiltrados = medicamentos.filter((med) => {
@@ -132,7 +140,6 @@ export default function DiversosSearch() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>Filtrar por Classificação:</span>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {/* Opção "Similar" Removida Aqui */}
               {['', 'Genérico', 'Ético'].map(clas => (
                 <button
                   key={`clas-${clas}`}
@@ -162,7 +169,7 @@ export default function DiversosSearch() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <th style={{ padding: '12px 16px', width: '120px' }}>Código</th>
+                <th style={{ padding: '12px 16px', width: '160px' }}>Código / Gaveta</th>
                 <th style={{ padding: '12px 16px' }}>Produto</th>
                 <th style={{ padding: '12px 16px' }}>Categoria</th>
                 <th style={{ padding: '12px 16px' }}>Classificação</th>
@@ -178,7 +185,26 @@ export default function DiversosSearch() {
                 medicamentosFiltrados.map((med) => (
                   <tr key={med.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                      {med.codigo_diversos ? med.codigo_diversos : '-'}
+                      {med.codigo_diversos ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>DIVERSOS{med.codigo_diversos}</span>
+                          <button 
+                            onClick={() => handleCopy(med.codigo_diversos, med.id)}
+                            style={{ 
+                              background: 'none', 
+                              border: 'none', 
+                              cursor: 'pointer', 
+                              color: copiadoId === med.id ? '#16a34a' : 'var(--color-text-muted)', 
+                              display: 'flex', 
+                              padding: '4px',
+                              transition: 'color 0.2s'
+                            }}
+                            title={copiadoId === med.id ? "Copiado!" : "Copiar Código"}
+                          >
+                            <Copy size={16} />
+                          </button>
+                        </div>
+                      ) : '-'}
                     </td>
                     <td style={{ padding: '12px 16px' }}>{med.produto}</td>
                     
