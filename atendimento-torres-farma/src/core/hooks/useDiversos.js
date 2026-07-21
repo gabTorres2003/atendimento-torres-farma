@@ -22,19 +22,16 @@ export const useDiversos = () => {
   const salvarMedicamento = async (medicamentoData) => {
     setLoading(true);
     try {
-      const existeDuplicidade = await DiversosRepository.verificarDuplicidade(medicamentoData.produto, medicamentoData.id);
+      const existeDuplicidade = await DiversosRepository.verificarDuplicidade(
+        medicamentoData.produto, 
+        medicamentoData.id
+      );
       
       if (existeDuplicidade) {
         return { success: false, error: 'Já existe um medicamento cadastrado com este exato nome.' };
       }
 
       let payload = { ...medicamentoData };
-
-      // Gera código apenas para novos
-      if (!payload.id && !payload.codigo_diversos) {
-        const maiorCodigo = await DiversosRepository.obterMaiorCodigo();
-        payload.codigo_diversos = (maiorCodigo + 1).toString();
-      }
 
       if (payload.id) {
         await DiversosRepository.atualizar(payload.id, payload);
@@ -46,6 +43,19 @@ export const useDiversos = () => {
     } catch (error) {
       console.error('Erro ao salvar medicamento:', error);
       return { success: false, error: 'Erro ao salvar dados no servidor.' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const buscarProximoCodigo = async () => {
+    try {
+      setLoading(true);
+      const proximo = await DiversosRepository.getNextCodigoLivre();
+      return proximo;
+    } catch (error) {
+      console.error('Erro ao buscar próximo código livre:', error);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -64,5 +74,5 @@ export const useDiversos = () => {
     }
   };
 
-  return { medicamentos, buscarMedicamentos, salvarMedicamento, deletarMedicamento, loading };
+  return { medicamentos, buscarMedicamentos, salvarMedicamento, buscarProximoCodigo, deletarMedicamento, loading };
 };
