@@ -85,21 +85,33 @@ export const useEncomendasBoard = () => {
     }
   };
 
-  const enviarWhatsApp = (enc) => {
-    if (!enc.telefone) {
-      alert('Esta encomenda não possui um telefone cadastrado.');
+  const enviarWhatsApp = (encomenda) => {
+    if (!encomenda.telefone) {
+      alert('Esta encomenda não possui telefone cadastrado.');
       return;
     }
-    const numeroLimpo = enc.telefone.replace(/\D/g, '');
+
+    // Limpa a string do telefone, garantindo que vá apenas os números para a URL
+    const telefoneLimpo = encomenda.telefone.replace(/\D/g, '');
     let mensagem = '';
-    if (enc.entregue) {
-      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Passando para confirmar que a entrega da sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} foi concluída. Muito obrigado pela preferência!`;
-    } else if (enc.comprado) {
-      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Boas notícias: sua encomenda de ${enc.quantidade || '1'}x ${enc.produto} já chegou e está separada para você!`;
-    } else {
-      mensagem = `Olá, ${enc.cliente}! Aqui é da Torres Farma. Referente à sua encomenda de ${enc.quantidade || '1'}x ${enc.produto}...`;
+
+    // Verifica se o produto já foi comprado (chegou na loja) mas ainda não foi entregue
+    if (encomenda.comprado && !encomenda.entregue) {
+      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? 😃\n\nA sua encomenda de *${encomenda.produto}* já chegou aqui na Drogaria Torres Farma!\n\nVocê gostaria que a gente entregasse na sua casa ou prefere vir buscar aqui na loja?`;
+    } 
+    // Mensagem padrão caso a encomenda ainda esteja pendente (não comprada)
+    else if (!encomenda.comprado) {
+      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? 😃\n\nAqui é da Drogaria Torres Farma. Passando para avisar que a sua encomenda de *${encomenda.produto}* já foi anotada e avisaremos assim que chegar!`;
+    } 
+    // Mensagem de agradecimento (opcional, caso cliquem no ícone no Histórico)
+    else if (encomenda.entregue) {
+      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? 😃\n\nAqui é da Drogaria Torres Farma. Muito obrigado por comprar com a gente! Qualquer dúvida sobre o uso do *${encomenda.produto}*, estamos à disposição.`;
     }
-    const url = `https://wa.me/55${numeroLimpo}?text=${encodeURIComponent(mensagem)}`;
+
+    // Gera o link da API do WhatsApp com o texto já formatado para URL
+    const url = `https://wa.me/55${telefoneLimpo}?text=${encodeURIComponent(mensagem)}`;
+    
+    // Abre o WhatsApp em uma nova aba
     window.open(url, '_blank');
   };
 

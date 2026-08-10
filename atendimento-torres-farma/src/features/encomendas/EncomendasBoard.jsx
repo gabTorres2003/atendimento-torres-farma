@@ -53,7 +53,7 @@ export default function EncomendasBoard() {
             <SearchIcon size={20} color="var(--color-text-muted)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
             <input
               type="text"
-              placeholder="Buscar no histórico por cliente, produto, número, data, fornecedor ou vendedor..."
+              placeholder="Buscar no histórico por cliente, produto, número, data ou vendedor..."
               value={termoBuscaHistorico}
               onChange={(e) => setTermoBuscaHistorico(e.target.value)}
               style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none', fontSize: '1rem', backgroundColor: '#f8fafc' }}
@@ -61,15 +61,17 @@ export default function EncomendasBoard() {
           </div>
         )}
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1200px' }}>
+        {/* Container com scroll horizontal em telas extremas, mas com min-width mais amigável */}
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '950px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Datas (Enc/Prev)</th>
+                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Balconista</th>
                 <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Cliente</th>
                 <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Produto</th>
                 <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Qtd</th>
-                <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Fornecedor</th>
+                {/* Removida a coluna de Fornecedor */}
                 <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Pagamento</th>
                 <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Acompanhamento</th>
                 <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>Status</th>
@@ -89,7 +91,7 @@ export default function EncomendasBoard() {
                   return (
                     <tr key={enc.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                       
-                      {/* Datas agrupadas para não quebrar layout */}
+                      {/* DATAS */}
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                         <div style={{ fontWeight: '500' }}>{formatData(enc.data_encomenda)}</div>
                         {enc.data_prevista && (
@@ -98,8 +100,16 @@ export default function EncomendasBoard() {
                           </div>
                         )}
                       </td>
-                      
+
+                      {/* BALCONISTA (Nova coluna) */}
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>
+                          {enc.vendedor || 'Não info.'}
+                        </div>
+                      </td>
+                      
+                      {/* CLIENTE (Com quebra de linha normal permitida) */}
+                      <td style={{ padding: '12px 16px', whiteSpace: 'normal', wordBreak: 'break-word', minWidth: '140px' }}>
                         <div style={{ fontWeight: 'bold' }}>{enc.cliente}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                           {enc.telefone || '-'}
@@ -111,9 +121,9 @@ export default function EncomendasBoard() {
                         </div>
                       </td>
 
-                      {/* Produto com minWidth para impedir quebra feia */}
-                      <td style={{ padding: '12px 16px', minWidth: '220px' }}>
-                        <div style={{ fontWeight: 'bold', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4' }}>{enc.produto}</div>
+                      {/* PRODUTO (Com quebra de linha normal permitida) */}
+                      <td style={{ padding: '12px 16px', whiteSpace: 'normal', wordBreak: 'break-word', minWidth: '200px' }}>
+                        <div style={{ fontWeight: 'bold', lineHeight: '1.4' }}>{enc.produto}</div>
                         {enc.codigo_produto && (
                           <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', marginTop: '4px', fontWeight: '500' }}>
                             Cód: {enc.codigo_produto}
@@ -121,35 +131,42 @@ export default function EncomendasBoard() {
                         )}
                       </td>
                       
+                      {/* QTD */}
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{enc.quantidade || '1'}</td>
                       
-                      {/* Fornecedores agrupados */}
-                      <td style={{ padding: '12px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
-                        <div style={{ fontWeight: enc.fornecedor ? 'bold' : 'normal', color: enc.fornecedor ? 'inherit' : 'var(--color-text-muted)' }}>
-                          {enc.fornecedor || 'Sem Compra'}
-                        </div>
-                        {enc.data_compra && (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>{formatData(enc.data_compra)}</div>
-                        )}
-                        {enc.fornecedor_sugerido && !enc.fornecedor && (
-                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                            Sug: {enc.fornecedor_sugerido}
-                          </div>
-                        )}
-                      </td>
-                      
+                      {/* PAGAMENTO */}
                       <td style={{ padding: '12px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{enc.pagamento || '-'}</td>
                       
+                      {/* ACOMPANHAMENTO COM ALERTA DE ENTREGA */}
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={enc.comprado || false} onChange={(e) => handleCheckboxChange(enc, 'comprado', e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                            <input 
+                              type="checkbox" 
+                              checked={enc.comprado || false} 
+                              onChange={(e) => handleCheckboxChange(enc, 'comprado', e.target.checked)} 
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }} 
+                            />
                             <span style={{ fontSize: '0.85rem', color: enc.comprado ? 'var(--color-primary)' : 'inherit', fontWeight: enc.comprado ? 'bold' : 'normal' }}>
                               Comprado
                             </span>
                           </label>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={enc.entregue || false} onChange={(e) => handleCheckboxChange(enc, 'entregue', e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                            <input 
+                              type="checkbox" 
+                              checked={enc.entregue || false} 
+                              onChange={(e) => {
+                                // Lógica de confirmação antes de entregar
+                                if (e.target.checked) {
+                                  if (window.confirm(`Tem certeza que deseja confirmar a entrega do item:\n${enc.produto}\nPara o cliente: ${enc.cliente}?`)) {
+                                    handleCheckboxChange(enc, 'entregue', true);
+                                  }
+                                } else {
+                                  handleCheckboxChange(enc, 'entregue', false);
+                                }
+                              }} 
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }} 
+                            />
                             <span style={{ fontSize: '0.85rem', color: enc.entregue ? '#166534' : 'inherit', fontWeight: enc.entregue ? 'bold' : 'normal' }}>
                               Confirmar Entrega
                             </span>
@@ -157,12 +174,14 @@ export default function EncomendasBoard() {
                         </div>
                       </td>
 
+                      {/* STATUS */}
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                         <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', ...statusInfo.cor }}>
                           {statusInfo.texto}
                         </span>
                       </td>
                       
+                      {/* AÇÕES */}
                       <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button onClick={() => handleOpenModal(enc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: '16px' }}>
                           <Edit size={18} />
@@ -180,6 +199,7 @@ export default function EncomendasBoard() {
         </div>
       </Card>
 
+      {/* MODAL DE COMPRA */}
       {compraModal.isOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
             <Card style={{ width: '100%', maxWidth: '400px' }}>
