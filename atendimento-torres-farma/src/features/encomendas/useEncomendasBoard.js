@@ -97,15 +97,15 @@ export const useEncomendasBoard = () => {
 
     // Verifica se o produto já foi comprado (chegou na loja) mas ainda não foi entregue
     if (encomenda.comprado && !encomenda.entregue) {
-      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? 😃\n\nA sua encomenda de *${encomenda.produto}* já chegou aqui na Drogaria Torres Farma!\n\nVocê gostaria que a gente entregasse na sua casa ou prefere vir buscar aqui na loja?`;
+      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? \n\nA sua encomenda de *${encomenda.produto}* já chegou aqui na Drogaria Torres Farma!\n\nVocê gostaria que a gente entregasse na sua casa ou prefere vir buscar aqui na loja?`;
     } 
     // Mensagem padrão caso a encomenda ainda esteja pendente (não comprada)
     else if (!encomenda.comprado) {
-      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? 😃\n\nAqui é da Drogaria Torres Farma. Passando para avisar que a sua encomenda de *${encomenda.produto}* já foi anotada e avisaremos assim que chegar!`;
+      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? \n\nAqui é da Drogaria Torres Farma. Passando para avisar que a sua encomenda de *${encomenda.produto}* já foi anotada e avisaremos assim que chegar!`;
     } 
     // Mensagem de agradecimento (opcional, caso cliquem no ícone no Histórico)
     else if (encomenda.entregue) {
-      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? 😃\n\nAqui é da Drogaria Torres Farma. Muito obrigado por comprar com a gente! Qualquer dúvida sobre o uso do *${encomenda.produto}*, estamos à disposição.`;
+      mensagem = `Olá, ${encomenda.cliente}! Tudo bem? \n\nAqui é da Drogaria Torres Farma. Muito obrigado por comprar com a gente! Qualquer dúvida sobre o uso do *${encomenda.produto}*, estamos à disposição.`;
     }
 
     // Gera o link da API do WhatsApp com o texto já formatado para URL
