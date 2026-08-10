@@ -43,9 +43,10 @@ export default function MainLayout({ children }) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-background-alt)' }}>
+      
+      {/* --- MENU LATERAL (SIDEBAR) --- */}
       <aside style={{ width: isCollapsed ? '80px' : '250px', transition: 'width 0.3s ease', backgroundColor: '#fff', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         
-        {/* Botão de Toggle do Menu */}
         <button onClick={() => setIsCollapsed(!isCollapsed)} style={{ position: 'absolute', right: '-12px', top: '24px', backgroundColor: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}>
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
@@ -74,11 +75,6 @@ export default function MainLayout({ children }) {
         </nav>
 
         <div style={{ padding: '16px', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {!isCollapsed && (
-            <div style={{ marginBottom: '16px', fontSize: '0.9rem', color: 'var(--color-text-main)', textAlign: 'center' }}>
-              Logado como: <strong style={{ textTransform: 'capitalize' }}>{user?.nome}</strong>
-            </div>
-          )}
           <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px', backgroundColor: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }} title={isCollapsed ? 'Sair do Sistema' : ''}>
             <LogOut size={18} />
             {!isCollapsed && <span>Sair</span>}
@@ -86,9 +82,42 @@ export default function MainLayout({ children }) {
         </div>
       </aside>
 
-      <main style={{ flex: 1, padding: '24px', overflowY: 'auto', maxWidth: isCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 250px)' }}>
-        {children || <Outlet />}
-      </main>
+      {/* --- ÁREA PRINCIPAL DA TELA --- */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: isCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 250px)', transition: 'max-width 0.3s ease' }}>
+        
+        {/* BADGE DE PERFIL (Canto superior direito) */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 24px 0 24px' }}>
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: '#fff', 
+            padding: '6px 16px 6px 6px', borderRadius: '50px', border: '1px solid var(--color-border)', 
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)' 
+          }}>
+            {/* Círculo com a Inicial do Nome */}
+            <div style={{ 
+              backgroundColor: 'var(--color-primary)', color: '#fff', borderRadius: '50%', 
+              width: '32px', height: '32px', display: 'flex', alignItems: 'center', 
+              justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem' 
+            }}>
+              {user?.nome ? user.nome.charAt(0).toUpperCase() : 'B'}
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <span style={{ fontWeight: 'bold', color: 'var(--color-text-main)', fontSize: '0.85rem', textTransform: 'capitalize', lineHeight: '1' }}>
+                {user?.nome || 'Balcão'}
+              </span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'capitalize', marginTop: '2px' }}>
+                {user?.role || 'Atendimento'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* CONTEÚDO DINÂMICO (Tabelas, Formulários, etc) */}
+        <main style={{ flex: 1, padding: '16px 24px 24px 24px', overflowY: 'auto' }}>
+          {children || <Outlet />}
+        </main>
+
+      </div>
     </div>
   );
 }
