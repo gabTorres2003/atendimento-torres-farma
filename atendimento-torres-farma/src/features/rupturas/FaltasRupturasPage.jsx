@@ -254,7 +254,7 @@ export default function FaltasRupturasPage() {
             <span>Ruptura</span>
           </div>
           <p style={{ color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
-            Registro de uma solicitação de cliente, realizada no balcão ou por outros canais, de um produto que não temos disponível em estoque.
+            Registro de uma solicitação do cliente, realizada no balcão ou por outros canais, de um produto que não temos disponível em estoque.
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#b45309', fontWeight: 'bold' }}>
@@ -267,14 +267,14 @@ export default function FaltasRupturasPage() {
         </div>
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(520px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: '24px', width: '100%', alignItems: 'stretch' }}>
         <Card title="Registrar ruptura" icon={PackageSearch}>
-          <form onSubmit={rupturaForm.handleSubmit(handleRupturaSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={rupturaForm.handleSubmit(handleRupturaSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '100%' }}>
             {rupturaError && <div className="form-alert-error">{rupturaError}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label htmlFor="ruptura_nome_produto" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px', width: '100%' }}>
+              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
+                <label htmlFor="ruptura_nome_produto" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
                   Nome do produto *
                 </label>
                 <input
@@ -288,7 +288,9 @@ export default function FaltasRupturasPage() {
                     borderRadius: 'var(--radius-md)',
                     border: rupturaForm.formState.errors.nome_produto ? '1px solid var(--color-error)' : '1px solid var(--color-border)',
                     fontSize: '1rem',
-                    outline: 'none'
+                    outline: 'none',
+                    minWidth: 0,
+                    boxSizing: 'border-box'
                   }}
                 />
 
@@ -323,9 +325,9 @@ export default function FaltasRupturasPage() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.1fr 1fr', gap: '16px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label htmlFor="ruptura_canal_procura" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px', width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
+                <label htmlFor="ruptura_canal_procura" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
                   Canal de procura *
                 </label>
                 <select
@@ -337,7 +339,9 @@ export default function FaltasRupturasPage() {
                     borderRadius: 'var(--radius-md)',
                     border: rupturaForm.formState.errors.canal_procura ? '1px solid var(--color-error)' : '1px solid var(--color-border)',
                     fontSize: '1rem',
-                    outline: 'none'
+                    outline: 'none',
+                    minWidth: 0,
+                    boxSizing: 'border-box'
                   }}
                 >
                   {canaisDisponiveis.map((canal) => (
@@ -349,30 +353,34 @@ export default function FaltasRupturasPage() {
                 )}
               </div>
 
-              <FormInput
-                label="Nome do cliente *"
-                id="ruptura_nome_cliente"
-                placeholder="Ex: João da Silva"
-                register={rupturaForm.register('nome_cliente', { required: 'O nome do cliente é obrigatório.' })}
-                error={rupturaForm.formState.errors.nome_cliente}
-              />
+              <div style={{ width: '100%', minWidth: 0 }}>
+                <FormInput
+                  label="Nome do cliente *"
+                  id="ruptura_nome_cliente"
+                  placeholder="Ex: João da Silva"
+                  register={rupturaForm.register('nome_cliente', { required: 'O nome do cliente é obrigatório.' })}
+                  error={rupturaForm.formState.errors.nome_cliente}
+                />
+              </div>
 
-              <FormInput
-                label="Quantidade solicitada *"
-                id="ruptura_quantidade_solicitada"
-                type="number"
-                min="1"
-                step="1"
-                placeholder="1"
-                register={rupturaForm.register('quantidade_solicitada', {
-                  required: 'A quantidade é obrigatória.',
-                  validate: (value) => Number(value) > 0 || 'Informe uma quantidade maior que zero.'
-                })}
-                error={rupturaForm.formState.errors.quantidade_solicitada}
-              />
+              <div style={{ width: '100%', minWidth: 0 }}>
+                <FormInput
+                  label="Quantidade solicitada *"
+                  id="ruptura_quantidade_solicitada"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="1"
+                  register={rupturaForm.register('quantidade_solicitada', {
+                    required: 'A quantidade é obrigatória.',
+                    validate: (value) => Number(value) > 0 || 'Informe uma quantidade maior que zero.'
+                  })}
+                  error={rupturaForm.formState.errors.quantidade_solicitada}
+                />
+              </div>
             </div>
 
-            <div style={{ maxWidth: '430px' }}>
+            <div style={{ width: '100%', maxWidth: '430px', minWidth: 0 }}>
               <FormInput
                 label="Telefone do cliente"
                 id="ruptura_telefone_cliente"
@@ -391,12 +399,12 @@ export default function FaltasRupturasPage() {
         </Card>
 
         <Card title="Registrar urgência" icon={ShieldAlert}>
-          <form onSubmit={urgenciaForm.handleSubmit(handleUrgenciaSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={urgenciaForm.handleSubmit(handleUrgenciaSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '100%' }}>
             {urgenciaError && <div className="form-alert-error">{urgenciaError}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label htmlFor="urgencia_nome_produto" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px', width: '100%' }}>
+              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
+                <label htmlFor="urgencia_nome_produto" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
                   Produto *
                 </label>
                 <input
@@ -410,7 +418,9 @@ export default function FaltasRupturasPage() {
                     borderRadius: 'var(--radius-md)',
                     border: urgenciaForm.formState.errors.nome_produto ? '1px solid var(--color-error)' : '1px solid var(--color-border)',
                     fontSize: '1rem',
-                    outline: 'none'
+                    outline: 'none',
+                    minWidth: 0,
+                    boxSizing: 'border-box'
                   }}
                 />
 
@@ -445,14 +455,14 @@ export default function FaltasRupturasPage() {
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label htmlFor="urgencia_falta_dna" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
+              <label htmlFor="urgencia_falta_dna" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
                 Este produto já está na falta do DNA? *
               </label>
               <select
                 id="urgencia_falta_dna"
                 {...urgenciaForm.register('falta_dna', { required: 'Selecione uma opção.' })}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontSize: '1rem', outline: 'none' }}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
               >
                 {faltaDnaOptions.map((opcao) => (
                   <option key={opcao} value={opcao}>{opcao}</option>
