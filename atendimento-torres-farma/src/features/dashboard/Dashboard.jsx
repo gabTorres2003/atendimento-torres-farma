@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Package, Users, ClipboardList } from 'lucide-react';
+import { Search, Package, Users, ClipboardList, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../core/hooks/useAuth';
 import { Card } from '../../shared/components/cards/Card';
 
@@ -40,6 +40,17 @@ export default function Dashboard() {
           <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '8px' }}>Encomendas</h2>
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
             Gestão de pedidos e faltas
+          </p>
+        </Card>
+
+        <Card 
+          style={{ cursor: 'pointer', textAlign: 'center', padding: '40px 20px', transition: 'transform 0.2s' }}
+          onClick={() => navigate('/faltas-rupturas')}
+        >
+          <AlertTriangle size={48} color="var(--color-primary)" style={{ margin: '0 auto 16px' }} />
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '8px' }}>Faltas e Rupturas</h2>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+            Registro e consolidação de faltas em estoque
           </p>
         </Card>
 
