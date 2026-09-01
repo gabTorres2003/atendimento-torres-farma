@@ -33,5 +33,19 @@ export const useRupturas = () => {
     }
   };
 
-  return { rupturas, loading, listarRupturas, salvarRuptura };
+  const excluirRuptura = async (id) => {
+    setLoading(true);
+    try {
+      await RupturasRepository.deletar(id);
+      await listarRupturas();
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao excluir ruptura:', error);
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { rupturas, loading, listarRupturas, salvarRuptura, excluirRuptura };
 };

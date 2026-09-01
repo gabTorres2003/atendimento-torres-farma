@@ -1,8 +1,8 @@
 import { supabase } from '../supabaseClient';
 
-const tabela = 'rupturas';
+const tabela = 'urgencias';
 
-export const RupturasRepository = {
+export const UrgenciasRepository = {
   normalizarNomeProduto(nome = '') {
     return String(nome || '')
       .normalize('NFD')
@@ -28,7 +28,7 @@ export const RupturasRepository = {
     return (data || []).map((item) => ({
       ...item,
       nome_produto: this.normalizarNomeProduto(item.nome_produto || ''),
-      canal_procura: (item.canal_procura || 'BALCÃO').toUpperCase(),
+      falta_dna: Boolean(item.falta_dna),
       usuario_registro: item.usuario_registro || 'Balcão'
     }));
   },
@@ -66,25 +66,16 @@ export const RupturasRepository = {
 
   async criar(payload) {
     const produtoNormalizado = this.normalizarNomeProduto(payload.nome_produto || '');
-
     if (!produtoNormalizado) {
       throw new Error('O nome do produto é obrigatório.');
-    }
-
-    const quantidade = Number(payload.quantidade_solicitada);
-    if (!Number.isFinite(quantidade) || quantidade <= 0) {
-      throw new Error('A quantidade solicitada deve ser maior que zero.');
     }
 
     const registro = {
       nome_produto: produtoNormalizado,
       ean_dna: payload.ean_dna ? String(payload.ean_dna).trim().toUpperCase() : null,
-      canal_procura: (payload.canal_procura || 'BALCÃO').toUpperCase(),
-      nome_cliente: String(payload.nome_cliente || '').trim(),
-      quantidade_solicitada: quantidade,
-      telefone_cliente: payload.telefone_cliente ? String(payload.telefone_cliente).trim() : null,
+      falta_dna: Boolean(payload.falta_dna),
       usuario_registro: payload.usuario_registro || 'Balcão',
-      created_at: new Date().toISOString(),
+      created_at: new Date().toISOString()
     };
 
     const { data, error } = await supabase
@@ -94,7 +85,7 @@ export const RupturasRepository = {
 
     if (error) {
       if (error.code === '42P01' || /does not exist/i.test(error.message || '')) {
-        throw new Error('A tabela de rupturas ainda não foi criada no banco.');
+        throw new Error('A tabela de urgências ainda não foi criada no banco.');
       }
       throw error;
     }
@@ -105,7 +96,7 @@ export const RupturasRepository = {
   async deletar(id) {
     const usuarioSalvo = JSON.parse(localStorage.getItem('@AtendimentoTorres:user') || '{}');
     if (usuarioSalvo.role !== 'admin') {
-      throw new Error('Acesso negado. Apenas administradores podem excluir rupturas.');
+      throw new Error('Acesso negado. Apenas administradores podem excluir urgências.');
     }
 
     const { error } = await supabase
