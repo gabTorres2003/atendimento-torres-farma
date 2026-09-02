@@ -12,7 +12,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 });
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY')!;
 const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
 async function validarAdmin(credentials: { login?: string; pin?: string }) {
