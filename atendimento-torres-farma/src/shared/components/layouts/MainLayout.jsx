@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { LogOut, Home, Search, Package, Users, ClipboardList, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { LogOut, Home, Search, Package, Users, ClipboardList, ChevronLeft, ChevronRight, AlertTriangle, CalendarDays } from 'lucide-react';
 import { useAuth } from '../../../core/hooks/useAuth';
 import { AuditoriaRepository } from '../../../infrastructure/supabase/repositories/AuditoriaRepository';
 
@@ -18,6 +18,7 @@ export default function MainLayout({ children }) {
         case '/diversos': modulo = 'Módulo Diversos'; break;
         case '/encomendas': modulo = 'Módulo Encomendas'; break;
         case '/faltas-rupturas': modulo = 'Módulo Faltas e Rupturas'; break;
+        case '/escala-feriados': modulo = 'Módulo Escala de Feriados'; break;
         case '/usuarios': modulo = 'Módulo de Equipe'; break;
         case '/auditoria': modulo = 'Módulo de Auditoria'; break;
         default: modulo = location.pathname;
@@ -36,6 +37,7 @@ export default function MainLayout({ children }) {
     { path: '/diversos', label: 'Diversos', icon: Search },
     { path: '/encomendas', label: 'Encomendas', icon: Package },
     { path: '/faltas-rupturas', label: 'Faltas e Rupturas', icon: AlertTriangle },
+    { path: '/escala-feriados', label: 'Escala de Feriados', icon: CalendarDays },
   ];
 
   if (user?.role === 'admin') {
