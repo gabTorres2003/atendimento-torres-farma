@@ -1,0 +1,4 @@
+project_id = "uddmenewrluxyewdyfxe"
+
+[functions.admin-feriados]
+verify_jwt = false

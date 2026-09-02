@@ -104,7 +104,7 @@ export default function EscalaFeriadosPage() {
         'JOSIANE', 'CELIO', 'LAILA', 'JOAO', 'YALLON'
       ]);
       const balconistasAtivos = (usuarios || [])
-        .filter((u) => u.role === 'balconista' && u.ativo === true)
+        .filter((u) => String(u.role || '').trim().toLowerCase() === 'balconista' && u.ativo === true)
         .filter((u) => nomesIniciais.has(normalizeName(u.nome).replace(/[^A-Z0-9]/g, '')))
         .map((u) => ({ id: u.id, nome: u.nome, role: 'balconista' }));
 

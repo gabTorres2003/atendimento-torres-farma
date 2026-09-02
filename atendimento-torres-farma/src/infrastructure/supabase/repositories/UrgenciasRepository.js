@@ -1,6 +1,11 @@
 import { supabase } from '../supabaseClient';
 
 const tabela = 'urgencias';
+const tabelaAusente = (error) => (
+  error?.code === '42P01'
+  || error?.code === 'PGRST205'
+  || /does not exist|could not find the table/i.test(error?.message || '')
+);
 
 export const UrgenciasRepository = {
   normalizarNomeProduto(nome = '') {
@@ -19,7 +24,7 @@ export const UrgenciasRepository = {
       .order('created_at', { ascending: false });
 
     if (error) {
-      if (error.code === '42P01' || /does not exist/i.test(error.message || '')) {
+      if (tabelaAusente(error)) {
         return [];
       }
       throw error;
@@ -47,7 +52,7 @@ export const UrgenciasRepository = {
       .limit(8);
 
     if (error) {
-      if (error.code === '42P01' || /does not exist/i.test(error.message || '')) {
+      if (tabelaAusente(error)) {
         return [];
       }
       throw error;
@@ -84,7 +89,7 @@ export const UrgenciasRepository = {
       .select();
 
     if (error) {
-      if (error.code === '42P01' || /does not exist/i.test(error.message || '')) {
+      if (tabelaAusente(error)) {
         throw new Error('A tabela de urgências ainda não foi criada no banco.');
       }
       throw error;
