@@ -21,7 +21,7 @@ export function useFeriados() {
     }
   }, []);
 
-  const criarFeriado = useCallback(async (payload) => {
+  const criarFeriado = useCallback(async (payload, credentials) => {
     setLoading(true);
     setError(null);
     try {
@@ -29,7 +29,7 @@ export function useFeriados() {
       if (existente) {
         throw new Error('Já existe um feriado cadastrado para esta data.');
       }
-      const novo = await FeriadosRepository.criar(payload);
+      const novo = await FeriadosRepository.criar(payload, credentials);
       setFeriados((prev) => [...prev, novo].sort((a, b) => a.data.localeCompare(b.data)));
       return { success: true, data: novo };
     } catch (err) {
@@ -40,11 +40,11 @@ export function useFeriados() {
     }
   }, []);
 
-  const atualizarFeriado = useCallback(async (id, payload) => {
+  const atualizarFeriado = useCallback(async (id, payload, credentials) => {
     setLoading(true);
     setError(null);
     try {
-      const atualizado = await FeriadosRepository.atualizar(id, payload);
+      const atualizado = await FeriadosRepository.atualizar(id, payload, credentials);
       setFeriados((prev) => prev.map((f) => (f.id === id ? atualizado : f)));
       return { success: true, data: atualizado };
     } catch (err) {
@@ -55,11 +55,11 @@ export function useFeriados() {
     }
   }, []);
 
-  const deletarFeriado = useCallback(async (id) => {
+  const deletarFeriado = useCallback(async (id, credentials) => {
     setLoading(true);
     setError(null);
     try {
-      await FeriadosRepository.deletar(id);
+      await FeriadosRepository.deletar(id, credentials);
       setFeriados((prev) => prev.filter((f) => f.id !== id));
       return { success: true };
     } catch (err) {

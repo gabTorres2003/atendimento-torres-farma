@@ -54,28 +54,17 @@ export function useEscala() {
     }
   }, []);
 
-  const criarOuAtualizarEscala = useCallback(async (feriadoId, membros, horarioInicio, horarioFim, criadaPor) => {
+  const criarOuAtualizarEscala = useCallback(async (feriadoId, membros, horarioInicio, horarioFim, criadaPor, credentials) => {
     setLoading(true);
     setError(null);
     try {
-      let escala = await EscalaRepository.buscarPorFeriadoId(feriadoId);
-      if (!escala) {
-        escala = await EscalaRepository.criar({
-          feriado_id: feriadoId,
-          horario_inicio: horarioInicio,
-          horario_fim: horarioFim,
-          status: 'RASCUNHO',
-          criada_por: criadaPor
-        });
-      } else {
-        escala = await EscalaRepository.atualizar(escala.id, {
-          horario_inicio: horarioInicio,
-          horario_fim: horarioFim,
-          status: 'PENDENTE'
-        });
-      }
-
-      await EscalaRepository.salvarMembros(escala.id, membros);
+      const escala = await EscalaRepository.salvarEscala({
+        feriado_id: feriadoId,
+        membros,
+        horario_inicio: horarioInicio,
+        horario_fim: horarioFim,
+        criada_por: criadaPor
+      }, credentials);
       setMembrosAtuais(membros);
       await carregarEscalas();
       return { success: true, escala };
@@ -87,13 +76,13 @@ export function useEscala() {
     }
   }, [carregarEscalas]);
 
-  const confirmarEscala = useCallback(async (feriadoId, confirmadaPor) => {
+  const confirmarEscala = useCallback(async (feriadoId, confirmadaPor, credentials) => {
     setLoading(true);
     setError(null);
     try {
       const escala = await EscalaRepository.buscarPorFeriadoId(feriadoId);
       if (!escala) throw new Error('Salve a escala antes de confirmar.');
-      await EscalaRepository.confirmar(escala.id, confirmadaPor);
+      await EscalaRepository.confirmar(escala.id, confirmadaPor, credentials);
       await carregarEscalas();
       return { success: true };
     } catch (err) {
@@ -104,13 +93,13 @@ export function useEscala() {
     }
   }, [carregarEscalas]);
 
-  const deletarEscala = useCallback(async (feriadoId) => {
+  const deletarEscala = useCallback(async (feriadoId, credentials) => {
     setLoading(true);
     setError(null);
     try {
       const escala = await EscalaRepository.buscarPorFeriadoId(feriadoId);
       if (!escala) throw new Error('Escala não encontrada.');
-      await EscalaRepository.deletar(escala.id);
+      await EscalaRepository.deletar(escala.id, credentials);
       setMembrosAtuais([]);
       await carregarEscalas();
       return { success: true };

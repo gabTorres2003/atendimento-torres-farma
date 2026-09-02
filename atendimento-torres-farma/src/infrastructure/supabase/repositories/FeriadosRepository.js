@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { executarAcaoAdministrativa } from './AdminFunctionsRepository';
 
 export const FeriadosRepository = {
   async listarTodos() {
@@ -27,7 +28,7 @@ export const FeriadosRepository = {
       .from('feriados')
       .select('*')
       .eq('data', data)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
     return result || null;
@@ -44,52 +45,32 @@ export const FeriadosRepository = {
     return data;
   },
 
-  async criar(payload) {
-    const { data, error } = await supabase
-      .from('feriados')
-      .insert([{
-        data: payload.data,
-        nome: payload.nome,
-        abrangencia: payload.abrangencia,
-        natureza: payload.natureza,
-        observacao: payload.observacao || null,
-        ativo: payload.ativo !== undefined ? payload.ativo : true,
-        created_by: payload.created_by || null
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+  async criar(payload, credentials) {
+    return executarAcaoAdministrativa('CRIAR_FERIADO', {
+      data: payload.data,
+      nome: payload.nome,
+      abrangencia: payload.abrangencia,
+      natureza: payload.natureza,
+      observacao: payload.observacao || null,
+      ativo: payload.ativo !== undefined ? payload.ativo : true,
+      created_by: payload.created_by || null
+    }, credentials);
   },
 
-  async atualizar(id, payload) {
-    const { data, error } = await supabase
-      .from('feriados')
-      .update({
-        data: payload.data,
-        nome: payload.nome,
-        abrangencia: payload.abrangencia,
-        natureza: payload.natureza,
-        observacao: payload.observacao || null,
-        ativo: payload.ativo
-      })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+  async atualizar(id, payload, credentials) {
+    return executarAcaoAdministrativa('ATUALIZAR_FERIADO', {
+      id,
+      data: payload.data,
+      nome: payload.nome,
+      abrangencia: payload.abrangencia,
+      natureza: payload.natureza,
+      observacao: payload.observacao || null,
+      ativo: payload.ativo
+    }, credentials);
   },
 
-  async deletar(id) {
-    const { error } = await supabase
-      .from('feriados')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-    return true;
+  async deletar(id, credentials) {
+    return executarAcaoAdministrativa('DELETAR_FERIADO', { id }, credentials);
   },
 
   async listarBalconistas() {

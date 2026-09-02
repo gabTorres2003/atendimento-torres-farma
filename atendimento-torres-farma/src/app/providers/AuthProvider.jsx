@@ -6,6 +6,7 @@ export const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [adminCredentials, setAdminCredentials] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export const AuthProvider = ({ children }) => {
 
       const userData = { id: data.id, nome: data.nome, role: data.role };
       setUser(userData);
+      setAdminCredentials(data.role === 'admin' ? { login: usuario.trim(), pin } : null);
       localStorage.setItem('@AtendimentoTorres:user', JSON.stringify(userData));
       
       // Registra o acesso na nova Auditoria
@@ -50,11 +52,12 @@ export const AuthProvider = ({ children }) => {
       AuditoriaRepository.registrarAcesso(user.nome, 'LOGOUT', 'Saiu do sistema.');
     }
     setUser(null);
+    setAdminCredentials(null);
     localStorage.removeItem('@AtendimentoTorres:user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, adminCredentials, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
