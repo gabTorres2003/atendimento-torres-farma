@@ -100,22 +100,9 @@ export default function EscalaFeriadosPage() {
   const carregarEquipe = useCallback(async () => {
     try {
       const usuarios = await FeriadosRepository.listarUsuarios();
-      const nomesIniciais = new Set([
-        'JOSIANE', 'CELIO', 'LAILA', 'JOAO', 'YALLON'
-      ]);
       const balconistasAtivos = (usuarios || [])
         .filter((u) => String(u.role || '').trim().toLowerCase() === 'balconista' && u.ativo === true)
-        .filter((u) => nomesIniciais.has(normalizeName(u.nome).replace(/[^A-Z0-9]/g, '')))
         .map((u) => ({ id: u.id, nome: u.nome, role: 'balconista' }));
-
-      const encontrados = new Set(
-        balconistasAtivos.map((u) => normalizeName(u.nome).replace(/[^A-Z0-9]/g, ''))
-      );
-      const ausentes = ['JOSIANE', 'CELIO', 'LAILA', 'JOAO', 'YALLON']
-        .filter((nome) => !encontrados.has(nome));
-      if (ausentes.length > 0) {
-        console.warn('Funcionários iniciais não encontrados ou inativos:', ausentes.join(', '));
-      }
 
       setEquipeCompleta(balconistasAtivos);
     } catch (err) {
