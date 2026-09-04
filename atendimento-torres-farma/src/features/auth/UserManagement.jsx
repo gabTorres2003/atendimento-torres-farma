@@ -116,6 +116,7 @@ export const UserManagement = () => {
                 <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)' }}>Nível de Acesso</label>
                 <select style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }} {...register('role')}>
                   <option value="balconista">Balconista</option>
+                  <option value="caixa">Caixa</option>
                   <option value="admin">Administrador</option>
                 </select>
               </div>

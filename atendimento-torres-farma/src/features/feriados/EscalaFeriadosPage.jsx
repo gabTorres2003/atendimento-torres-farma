@@ -110,8 +110,11 @@ export default function EscalaFeriadosPage() {
       const balconistasAtivos = (usuarios || [])
         .filter((u) => String(u.role || '').trim().toLowerCase() === 'balconista' && u.ativo === true)
         .map((u) => ({ id: u.id, nome: u.nome, role: 'balconista', tipo_funcionario: 'BALCONISTA' }));
+      const caixasAtivos = (usuarios || [])
+        .filter((u) => String(u.role || '').trim().toLowerCase() === 'caixa' && u.ativo === true)
+        .map((u) => ({ id: u.id, nome: u.nome, role: 'caixa', tipo_funcionario: 'CAIXA' }));
 
-      setEquipeCompleta([...balconistasAtivos, ...(motoboys || [])]);
+      setEquipeCompleta([...balconistasAtivos, ...caixasAtivos, ...(motoboys || [])]);
     } catch (err) {
       console.error('Erro ao carregar equipe:', err);
     }
@@ -263,7 +266,7 @@ export default function EscalaFeriadosPage() {
 
   const handleGerarSugestao = async () => {
     if (equipeCompleta.length === 0) {
-      alert('Nenhum balconista inicial ativo foi encontrado no cadastro de usuários.');
+      alert('Nenhum participante ativo foi encontrado para montar a sugestão.');
       return;
     }
     const sugestao = await gerarSugestao(equipeCompleta);
@@ -313,6 +316,20 @@ export default function EscalaFeriadosPage() {
     }
   };
 
+  const validarComposicao = () => {
+    const trabalhando = draft.trabalhando;
+    const quantidade = (tipo) => trabalhando.filter((membro) => membro.tipo_funcionario === tipo).length;
+    const erros = [];
+    if (quantidade('MOTOBOY') !== 2) erros.push('2 motoboys');
+    if (quantidade('CAIXA') !== 1) erros.push('1 caixa');
+    if (quantidade('BALCONISTA') !== 2) erros.push('2 balconistas');
+    if (erros.length > 0) {
+      alert(`A escala precisa ter exatamente: ${erros.join(', ')} trabalhando.`);
+      return false;
+    }
+    return true;
+  };
+
   const handleConfirmarEscala = async () => {
     if (!isAdmin) {
       alert('Apenas administradores podem confirmar escalas.');
@@ -320,6 +337,8 @@ export default function EscalaFeriadosPage() {
     }
 
     if (!selectedFeriado) return;
+
+    if (!validarComposicao()) return;
 
     const result = await confirmarEscala(selectedFeriado.id, user?.id, adminCredentials);
     if (result.success) {

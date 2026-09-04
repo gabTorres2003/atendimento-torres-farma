@@ -146,17 +146,26 @@ function calcularSugestao(equipe, membrosUltimaConfirmada = []) {
     return aTrabalhou - bTrabalhou || a.nome.localeCompare(b.nome);
   });
 
-  const quantidadeTrabalho = Math.min(2, ordenada.length);
   const toMember = (pessoa, situacao) => ({
     id: pessoa.id,
     nome: pessoa.nome,
-    tipo_funcionario: 'BALCONISTA',
+    tipo_funcionario: pessoa.tipo_funcionario || 'BALCONISTA',
     situacao
   });
 
+  const porTipo = (tipo) => ordenada.filter((pessoa) => pessoa.tipo_funcionario === tipo);
+  const trabalhando = [
+    ...porTipo('MOTOBOY').slice(0, 2),
+    ...porTipo('CAIXA').slice(0, 1),
+    ...porTipo('BALCONISTA').slice(0, 2)
+  ];
+  const idsTrabalhando = new Set(trabalhando.map((pessoa) => pessoa.id));
+
   return {
-    trabalhando: ordenada.slice(0, quantidadeTrabalho).map((pessoa) => toMember(pessoa, 'TRABALHA')),
-    folgando: ordenada.slice(quantidadeTrabalho).map((pessoa) => toMember(pessoa, 'FOLGA')),
+    trabalhando: trabalhando.map((pessoa) => toMember(pessoa, 'TRABALHA')),
+    folgando: ordenada
+      .filter((pessoa) => !idsTrabalhando.has(pessoa.id))
+      .map((pessoa) => toMember(pessoa, 'FOLGA')),
     horarioInicio: '07:00',
     horarioFim: '18:00'
   };

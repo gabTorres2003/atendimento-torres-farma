@@ -160,7 +160,8 @@ async function executarAcao(
         escala_id: escala.id,
         tipo_funcionario: membro.tipo_funcionario,
         balconista_id:
-          membro.tipo_funcionario === 'BALCONISTA'
+          membro.tipo_funcionario === 'BALCONISTA' ||
+          membro.tipo_funcionario === 'CAIXA'
             ? membro.balconista_id
             : null,
         motoboy_id:
