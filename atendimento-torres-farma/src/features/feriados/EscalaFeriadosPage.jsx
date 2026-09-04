@@ -10,6 +10,7 @@ import { Button } from '../../shared/components/buttons/Button';
 import { useFeriados } from '../../core/hooks/useFeriados';
 import { useEscala } from '../../core/hooks/useEscala';
 import { FeriadosRepository } from '../../infrastructure/supabase/repositories/FeriadosRepository';
+import { CaixaMotoboysRepository } from '../../infrastructure/supabase/repositories/CaixaMotoboysRepository';
 
 const normalizeName = (value) => String(value || '')
   .normalize('NFD')
@@ -100,11 +101,17 @@ export default function EscalaFeriadosPage() {
   const carregarEquipe = useCallback(async () => {
     try {
       const usuarios = await FeriadosRepository.listarUsuarios();
+      let motoboys = [];
+      try {
+        motoboys = await CaixaMotoboysRepository.listarAtivos();
+      } catch (motoboyError) {
+        console.error('Erro ao carregar motoboys do Caixa:', motoboyError);
+      }
       const balconistasAtivos = (usuarios || [])
         .filter((u) => String(u.role || '').trim().toLowerCase() === 'balconista' && u.ativo === true)
-        .map((u) => ({ id: u.id, nome: u.nome, role: 'balconista' }));
+        .map((u) => ({ id: u.id, nome: u.nome, role: 'balconista', tipo_funcionario: 'BALCONISTA' }));
 
-      setEquipeCompleta(balconistasAtivos);
+      setEquipeCompleta([...balconistasAtivos, ...(motoboys || [])]);
     } catch (err) {
       console.error('Erro ao carregar equipe:', err);
     }
@@ -287,7 +294,7 @@ export default function EscalaFeriadosPage() {
     const todosMembros = [...draft.trabalhando, ...draft.folgando].map((membro) => ({
     tipo_funcionario: membro.tipo_funcionario,
     balconista_id: membro.tipo_funcionario === 'MOTOBOY' ? null : membro.id,
-    motoboy_id: null,
+    motoboy_id: membro.tipo_funcionario === 'MOTOBOY' ? membro.id : null,
     situacao: membro.situacao,
     horario_inicio: draft.horarioInicio,
     horario_fim: draft.horarioFim
@@ -362,7 +369,7 @@ export default function EscalaFeriadosPage() {
         [listaAtual]: [...prev[listaAtual], {
           id: pessoa.id,
           nome: pessoa.nome,
-          tipo_funcionario: 'BALCONISTA',
+          tipo_funcionario: pessoa.tipo_funcionario || 'BALCONISTA',
           situacao: funcao
         }]
       };
@@ -397,7 +404,7 @@ export default function EscalaFeriadosPage() {
     const novaListaDestino = [...(destinoFuncao === 'trabalhando' ? draft.trabalhando : draft.folgando), {
       id: swapDestino.id,
       nome: swapDestino.nome,
-      tipo_funcionario: 'BALCONISTA',
+      tipo_funcionario: swapDestino.tipo_funcionario || 'BALCONISTA',
       situacao: destinoFuncao === 'trabalhando' ? 'TRABALHA' : 'FOLGA'
     }];
 
@@ -423,8 +430,12 @@ export default function EscalaFeriadosPage() {
       ...draft.trabalhando.map((m) => m.id),
       ...draft.folgando.map((m) => m.id)
     ]);
-    return equipeCompleta.filter((p) => !nomesNoDraft.has(normalizeName(p.nome)));
+    return equipeCompleta.filter((p) => !nomesNoDraft.has(p.id));
   }, [equipeCompleta, draft]);
+
+  const adicionarPessoa = (pessoa, situacao) => {
+    toggleMembro(pessoa, situacao);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -594,9 +605,16 @@ export default function EscalaFeriadosPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 {/* TRABALHAM */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)', fontWeight: '700', fontSize: '0.9rem' }}>
-                    <Users size={15} />
-                    Trabalham ({draft.trabalhando.length})
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', color: 'var(--color-primary)', fontWeight: '700', fontSize: '0.9rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Users size={15} />
+                      Trabalham ({draft.trabalhando.length})
+                    </span>
+                    {isAdmin && listaDisponivel.length > 0 && (
+                      <button type="button" onClick={() => adicionarPessoa(listaDisponivel[0], 'TRABALHA')} title="Adicionar em Trabalham" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #93c5fd', borderRadius: '6px', background: '#eff6ff', color: 'var(--color-primary)', cursor: 'pointer', padding: '3px 7px', fontSize: '0.72rem' }}>
+                        <Plus size={12} /> Adicionar
+                      </button>
+                    )}
                   </div>
                   <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px', minHeight: '140px', background: '#f0f9ff' }}>
                     {draft.trabalhando.length === 0 ? (
@@ -628,9 +646,16 @@ export default function EscalaFeriadosPage() {
 
                 {/* FOLGAM */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#b45309', fontWeight: '700', fontSize: '0.9rem' }}>
-                    <Clock3 size={15} />
-                    Folgam ({draft.folgando.length})
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', color: '#b45309', fontWeight: '700', fontSize: '0.9rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock3 size={15} />
+                      Folgam ({draft.folgando.length})
+                    </span>
+                    {isAdmin && listaDisponivel.length > 0 && (
+                      <button type="button" onClick={() => adicionarPessoa(listaDisponivel[0], 'FOLGA')} title="Adicionar em Folgam" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #fcd34d', borderRadius: '6px', background: '#fffbeb', color: '#92400e', cursor: 'pointer', padding: '3px 7px', fontSize: '0.72rem' }}>
+                        <Plus size={12} /> Adicionar
+                      </button>
+                    )}
                   </div>
                   <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px', minHeight: '140px', background: '#fffbeb' }}>
                     {draft.folgando.length === 0 ? (
@@ -667,19 +692,24 @@ export default function EscalaFeriadosPage() {
                   <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '0.9rem' }}>Adicionar à escala</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {listaDisponivel.map((pessoa) => (
-                      <button
-                        key={pessoa.id || pessoa.nome}
-                        type="button"
-                        onClick={() => {
-                          const target = draft.trabalhando.length <= draft.folgando.length ? 'trabalhando' : 'folgando';
-                          toggleMembro(pessoa, target);
-                        }}
-                        style={{ background: '#fff', border: '1px solid var(--color-border)', borderRadius: '999px', padding: '5px 10px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <Plus size={12} />
-                        {pessoa.nome}
-                        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>({pessoa.role})</span>
-                      </button>
+                      <div key={pessoa.id || pessoa.nome} style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => adicionarPessoa(pessoa, 'TRABALHA')}
+                          style={{ background: '#fff', border: '1px solid var(--color-border)', borderRadius: '999px', padding: '5px 10px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Plus size={12} />
+                          {pessoa.nome} · Trabalha
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => adicionarPessoa(pessoa, 'FOLGA')}
+                          style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '999px', padding: '5px 10px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', color: '#92400e' }}
+                        >
+                          <Plus size={12} />
+                          Folga
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
