@@ -1,3 +1,5 @@
+/// <reference path="./types.d.ts" />
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const allowedOrigins = new Set([
@@ -57,9 +59,20 @@ async function executarAcao(
   admin: { id: string },
 ) {
   if (action === 'CRIAR_FERIADO') {
+    const agora = new Date().toISOString()
     return adminClient
       .from('feriados')
-      .insert([{ ...payload, created_by: admin.id }])
+      .insert([{
+        data: payload.data,
+        nome: payload.nome,
+        abrangencia: payload.abrangencia,
+        natureza: payload.natureza,
+        observacao: payload.observacao || null,
+        ativo: payload.ativo !== undefined ? payload.ativo : true,
+        created_by: admin.id,
+        created_at: agora,
+        updated_at: agora
+      }])
       .select()
       .single()
   }
@@ -67,7 +80,7 @@ async function executarAcao(
     const { id, ...updates } = payload
     return adminClient
       .from('feriados')
-      .update(updates)
+      .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single()

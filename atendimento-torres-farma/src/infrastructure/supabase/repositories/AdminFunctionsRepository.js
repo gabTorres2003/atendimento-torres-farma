@@ -9,7 +9,18 @@ export async function executarAcaoAdministrativa(action, payload, credentials) {
     body: { action, payload, credentials }
   });
 
-  if (error) throw error;
+  if (error) {
+    if (error.name === 'FunctionsHttpError' && error.context instanceof Response) {
+      let responseBody = null;
+      try {
+        responseBody = await error.context.clone().json();
+      } catch {
+        responseBody = null;
+      }
+      throw new Error(responseBody?.error || error.message);
+    }
+    throw error;
+  }
   if (!data?.success) throw new Error(data?.error || 'Não foi possível concluir a operação administrativa.');
   return data.data;
 }
