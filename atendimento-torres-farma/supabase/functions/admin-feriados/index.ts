@@ -28,6 +28,25 @@ function jsonResponse(body: unknown, request: Request, status = 200) {
   })
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object') {
+    const databaseError = error as {
+      message?: string
+      details?: string
+      hint?: string
+      code?: string
+    }
+    return [
+      databaseError.message,
+      databaseError.details,
+      databaseError.hint,
+      databaseError.code ? `Código: ${databaseError.code}` : null,
+    ].filter(Boolean).join(' | ') || 'Erro interno.'
+  }
+  return 'Erro interno.'
+}
+
 const deno = (globalThis as any).Deno
 const supabaseUrl = deno.env.get('SUPABASE_URL')!
 const serviceRoleKey = deno.env.get('SERVICE_ROLE_KEY')!
@@ -243,7 +262,7 @@ deno.serve(async (request: Request) => {
     return jsonResponse(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro interno.',
+        error: getErrorMessage(error),
       },
       request,
       400,
