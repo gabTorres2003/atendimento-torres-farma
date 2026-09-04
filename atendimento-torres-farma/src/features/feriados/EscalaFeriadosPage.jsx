@@ -283,36 +283,46 @@ export default function EscalaFeriadosPage() {
   const handleSalvarRascunho = async () => {
     if (!selectedFeriado) return;
 
-    const duplicados = [];
-    draft.trabalhando.forEach((m) => {
-      if (draft.folgando.some((f) => f.id === m.id)) {
-        duplicados.push(m.nome);
-      }
-    });
-    if (duplicados.length > 0) {
-      alert(`Pessoa duplicada na escala: ${duplicados.join(', ')}`);
-      return;
-    }
-
-    const todosMembros = [...draft.trabalhando, ...draft.folgando].map((membro) => ({
-    tipo_funcionario: membro.tipo_funcionario,
-    balconista_id: membro.tipo_funcionario === 'MOTOBOY' ? null : membro.id,
-    motoboy_id: membro.tipo_funcionario === 'MOTOBOY' ? membro.id : null,
-    situacao: membro.situacao,
-    horario_inicio: draft.horarioInicio,
-    horario_fim: draft.horarioFim
+    const idsTrabalhando = new Set(draft.trabalhando.map((membro) => membro.id));
+    const trabalhando = draft.trabalhando.map((membro) => ({
+      ...membro,
+      situacao: 'TRABALHA'
     }));
+    const folgando = equipeCompleta
+      .filter((pessoa) => !idsTrabalhando.has(pessoa.id))
+      .map((pessoa) => ({
+        id: pessoa.id,
+        nome: pessoa.nome,
+        tipo_funcionario: pessoa.tipo_funcionario || 'BALCONISTA',
+        situacao: 'FOLGA'
+      }));
+    const todosMembros = [...trabalhando, ...folgando].map((membro) => ({
+      tipo_funcionario: membro.tipo_funcionario,
+      balconista_id: membro.tipo_funcionario === 'MOTOBOY' ? null : membro.id,
+      motoboy_id: membro.tipo_funcionario === 'MOTOBOY' ? membro.id : null,
+      situacao: membro.situacao,
+      horario_inicio: draft.horarioInicio,
+      horario_fim: draft.horarioFim
+    }));
+
     const result = await criarOuAtualizarEscala(
-    selectedFeriado.id,
-    todosMembros,
-    draft.horarioInicio,
-    draft.horarioFim,
-    user?.id,
-    adminCredentials
+      selectedFeriado.id,
+      todosMembros,
+      draft.horarioInicio,
+      draft.horarioFim,
+      user?.id,
+      adminCredentials
     );
 
     if (result.success) {
+      setDraft({
+        ...draft,
+        trabalhando,
+        folgando
+      });
       setStatusEscala('PENDENTE');
+    } else {
+      alert(`Não foi possível salvar a escala: ${result.error}`);
     }
   };
 
