@@ -97,6 +97,7 @@ export default function EscalaFeriadosPage() {
   const [swapDestino, setSwapDestino] = useState(null);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState('');
 
   const carregarEquipe = useCallback(async () => {
     try {
@@ -282,47 +283,49 @@ export default function EscalaFeriadosPage() {
 
   const handleSalvarRascunho = async () => {
     if (!selectedFeriado) return;
+    if (actionLoading) return;
 
-    const idsTrabalhando = new Set(draft.trabalhando.map((membro) => membro.id));
-    const trabalhando = draft.trabalhando.map((membro) => ({
-      ...membro,
-      situacao: 'TRABALHA'
-    }));
-    const folgando = equipeCompleta
-      .filter((pessoa) => !idsTrabalhando.has(pessoa.id))
-      .map((pessoa) => ({
-        id: pessoa.id,
-        nome: pessoa.nome,
-        tipo_funcionario: pessoa.tipo_funcionario || 'BALCONISTA',
-        situacao: 'FOLGA'
+    setActionLoading('salvar');
+    try {
+      const idsTrabalhando = new Set(draft.trabalhando.map((membro) => membro.id));
+      const trabalhando = draft.trabalhando.map((membro) => ({
+        ...membro,
+        situacao: 'TRABALHA'
       }));
-    const todosMembros = [...trabalhando, ...folgando].map((membro) => ({
-      tipo_funcionario: membro.tipo_funcionario,
-      balconista_id: membro.tipo_funcionario === 'MOTOBOY' ? null : membro.id,
-      motoboy_id: membro.tipo_funcionario === 'MOTOBOY' ? membro.id : null,
-      situacao: membro.situacao,
-      horario_inicio: draft.horarioInicio,
-      horario_fim: draft.horarioFim
-    }));
+      const folgando = equipeCompleta
+        .filter((pessoa) => !idsTrabalhando.has(pessoa.id))
+        .map((pessoa) => ({
+          id: pessoa.id,
+          nome: pessoa.nome,
+          tipo_funcionario: pessoa.tipo_funcionario || 'BALCONISTA',
+          situacao: 'FOLGA'
+        }));
+      const todosMembros = [...trabalhando, ...folgando].map((membro) => ({
+        tipo_funcionario: membro.tipo_funcionario,
+        balconista_id: membro.tipo_funcionario === 'MOTOBOY' ? null : membro.id,
+        motoboy_id: membro.tipo_funcionario === 'MOTOBOY' ? membro.id : null,
+        situacao: membro.situacao,
+        horario_inicio: draft.horarioInicio,
+        horario_fim: draft.horarioFim
+      }));
 
-    const result = await criarOuAtualizarEscala(
-      selectedFeriado.id,
-      todosMembros,
-      draft.horarioInicio,
-      draft.horarioFim,
-      user?.id,
-      adminCredentials
-    );
+      const result = await criarOuAtualizarEscala(
+        selectedFeriado.id,
+        todosMembros,
+        draft.horarioInicio,
+        draft.horarioFim,
+        user?.id,
+        adminCredentials
+      );
 
-    if (result.success) {
-      setDraft({
-        ...draft,
-        trabalhando,
-        folgando
-      });
-      setStatusEscala('PENDENTE');
-    } else {
-      alert(`Não foi possível salvar a escala: ${result.error}`);
+      if (result.success) {
+        setDraft((prev) => ({ ...prev, trabalhando, folgando }));
+        setStatusEscala('PENDENTE');
+      } else {
+        alert(`Não foi possível salvar a escala: ${result.error}`);
+      }
+    } finally {
+      setActionLoading('');
     }
   };
 
@@ -350,9 +353,17 @@ export default function EscalaFeriadosPage() {
 
     if (!validarComposicao()) return;
 
-    const result = await confirmarEscala(selectedFeriado.id, user?.id, adminCredentials);
-    if (result.success) {
-      setStatusEscala('CONFIRMADA');
+    if (actionLoading) return;
+    setActionLoading('confirmar');
+    try {
+      const result = await confirmarEscala(selectedFeriado.id, user?.id, adminCredentials);
+      if (result.success) {
+        setStatusEscala('CONFIRMADA');
+      } else {
+        alert(`Não foi possível confirmar a escala: ${result.error}`);
+      }
+    } finally {
+      setActionLoading('');
     }
   };
 
@@ -361,10 +372,18 @@ export default function EscalaFeriadosPage() {
     if (!selectedFeriado) return;
     if (!window.confirm('Tem certeza que deseja excluir esta escala?')) return;
 
-    const result = await deletarEscala(selectedFeriado.id, adminCredentials);
-    if (result.success) {
-      setDraft({ ...EMPTY_DRAFT });
-      setStatusEscala('PENDENTE');
+    if (actionLoading) return;
+    setActionLoading('excluir');
+    try {
+      const result = await deletarEscala(selectedFeriado.id, adminCredentials);
+      if (result.success) {
+        setDraft({ ...EMPTY_DRAFT });
+        setStatusEscala('PENDENTE');
+      } else {
+        alert(`Não foi possível excluir a escala: ${result.error}`);
+      }
+    } finally {
+      setActionLoading('');
     }
   };
 
@@ -610,9 +629,9 @@ export default function EscalaFeriadosPage() {
               {isAdmin && (
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
                   <Button onClick={handleGerarSugestao} icon={RefreshCw} variant="secondary" style={{ width: 'auto', padding: '8px 14px', fontSize: '0.85rem' }}>Sugestão</Button>
-                  <Button onClick={handleSalvarRascunho} icon={Save} variant="secondary" style={{ width: 'auto', padding: '8px 14px', fontSize: '0.85rem' }}>Salvar</Button>
-                  <Button onClick={handleConfirmarEscala} icon={Check} style={{ width: 'auto', padding: '8px 14px', fontSize: '0.85rem' }}>Confirmar</Button>
-                  <Button onClick={handleExcluirEscala} icon={Trash2} variant="secondary" style={{ width: 'auto', padding: '8px 14px', fontSize: '0.85rem', color: '#ef4444', borderColor: '#ef4444' }}>Excluir</Button>
+                  <Button onClick={handleSalvarRascunho} icon={Save} isLoading={actionLoading === 'salvar'} variant="secondary" style={{ width: 'auto', padding: '8px 14px', fontSize: '0.85rem' }}>Salvar</Button>
+                  <Button onClick={handleConfirmarEscala} icon={Check} isLoading={actionLoading === 'confirmar'} style={{ width: 'auto', padding: '8px 14px', fontSize: '0.85rem' }}>Confirmar</Button>
+                  <Button onClick={handleExcluirEscala} icon={Trash2} isLoading={actionLoading === 'excluir'} variant="secondary" style={{ width: 'auto', padding: '8px 14px', fontSize: '0.85rem', color: '#ef4444', borderColor: '#ef4444' }}>Excluir</Button>
                 </div>
               )}
 

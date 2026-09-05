@@ -162,7 +162,7 @@ async function executarAcao(
         balconista_id:
           membro.tipo_funcionario === 'BALCONISTA' ||
           membro.tipo_funcionario === 'CAIXA'
-            ? membro.balconista_id
+            ? membro.balconista_id || membro.id
             : null,
         motoboy_id:
           membro.tipo_funcionario === 'MOTOBOY' ? membro.motoboy_id : null,
@@ -234,6 +234,13 @@ async function executarAcao(
       payload.membros.map((membro: any) => ({
         ...membro,
         escala_id: payload.escala_id,
+        balconista_id:
+          membro.tipo_funcionario === 'BALCONISTA' ||
+          membro.tipo_funcionario === 'CAIXA'
+            ? membro.balconista_id || membro.id
+            : null,
+        motoboy_id:
+          membro.tipo_funcionario === 'MOTOBOY' ? membro.motoboy_id || membro.id : null,
       })),
     )
   }

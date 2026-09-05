@@ -46,10 +46,10 @@ export default function MainLayout({ children }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-background-alt)' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-background-alt)' }}>
       
       {/* --- MENU LATERAL (SIDEBAR) --- */}
-      <aside style={{ width: isCollapsed ? '80px' : '250px', transition: 'width 0.3s ease', backgroundColor: '#fff', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <aside style={{ width: isCollapsed ? '80px' : '250px', transition: 'width 0.3s ease', backgroundColor: '#fff', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 20 }}>
         
         <button onClick={() => setIsCollapsed(!isCollapsed)} style={{ position: 'absolute', right: '-12px', top: '24px', backgroundColor: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}>
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -87,7 +87,7 @@ export default function MainLayout({ children }) {
       </aside>
 
       {/* --- ÁREA PRINCIPAL DA TELA --- */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: isCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 250px)', transition: 'max-width 0.3s ease' }}>
+      <div style={{ minHeight: '100vh', marginLeft: isCollapsed ? '80px' : '250px', transition: 'margin-left 0.3s ease', display: 'flex', flexDirection: 'column' }}>
         
         {/* BADGE DE PERFIL (Canto superior direito) */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 24px 0 24px' }}>
