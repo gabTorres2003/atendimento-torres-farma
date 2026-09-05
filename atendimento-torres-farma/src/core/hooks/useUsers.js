@@ -41,10 +41,7 @@ export const useUsers = () => {
       return { success: true };
     } catch (error) {
       console.error('Erro ao salvar usuário:', error);
-      if (error.code === '23505') {
-        return { success: false, error: 'Este PIN já está sendo utilizado.' };
-      }
-      return { success: false, error: 'Erro ao salvar os dados.' };
+      return { success: false, error: error.message || 'Erro ao salvar os dados.' };
     } finally {
       setLoading(false);
     }
