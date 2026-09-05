@@ -407,11 +407,15 @@ export default function FaltasRupturasPage() {
         </Card>
 
         <Card title="Registrar urgência" icon={ShieldAlert}>
-          <form onSubmit={urgenciaForm.handleSubmit(handleUrgenciaSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '100%' }}>
+          <form onSubmit={urgenciaForm.handleSubmit(handleUrgenciaSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '100%' }}>
             {urgenciaError && <div className="form-alert-error">{urgenciaError}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px', width: '100%' }}>
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
+            <div style={{ padding: '16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', color: '#92400e', fontSize: '0.9rem', lineHeight: '1.5' }}>
+              Registre produtos que precisam de atenção prioritária na próxima compra.
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', width: '100%' }}>
+              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '7px', width: '100%', minWidth: 0 }}>
                 <label htmlFor="urgencia_nome_produto" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
                   Produto *
                 </label>
@@ -455,7 +459,7 @@ export default function FaltasRupturasPage() {
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px', alignItems: 'start' }}>
                 <FormInput
                   label="EAN ou código DNA"
                   id="urgencia_ean_dna"
@@ -475,26 +479,25 @@ export default function FaltasRupturasPage() {
                   })}
                   error={urgenciaForm.formState.errors.quantidade}
                 />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', width: '100%', minWidth: 0 }}>
+                  <label htmlFor="urgencia_falta_dna" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
+                    Falta no DNA? *
+                  </label>
+                  <select
+                    id="urgencia_falta_dna"
+                    {...urgenciaForm.register('falta_dna', { required: 'Selecione uma opção.' })}
+                    style={{ width: '100%', minHeight: '46px', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-main)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
+                  >
+                    {faltaDnaOptions.map((opcao) => (
+                      <option key={opcao} value={opcao}>{opcao}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
-              <label htmlFor="urgencia_falta_dna" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
-                Este produto já está na falta do DNA? *
-              </label>
-              <select
-                id="urgencia_falta_dna"
-                {...urgenciaForm.register('falta_dna', { required: 'Selecione uma opção.' })}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
-              >
-                {faltaDnaOptions.map((opcao) => (
-                  <option key={opcao} value={opcao}>{opcao}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button type="submit" icon={ShieldAlert} isLoading={loadingUrgencias}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid var(--color-border)' }}>
+              <Button type="submit" icon={ShieldAlert} isLoading={loadingUrgencias} style={{ width: 'auto', minWidth: '190px' }}>
                 Registrar urgência
               </Button>
             </div>
