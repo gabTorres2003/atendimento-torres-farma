@@ -115,9 +115,13 @@ export function useEscala() {
     setLoading(true);
     setError(null);
     try {
-      const ultima = await EscalaRepository.buscarUltimaConfirmada();
-      const membros = ultima ? await EscalaRepository.listarMembros(ultima.id) : [];
-      return calcularSugestao(equipe, membros);
+      const escalasConfirmadas = await EscalaRepository.listarConfirmadas();
+      const membrosPorEscala = await Promise.all(
+        escalasConfirmadas.map((escala) => EscalaRepository.listarMembros(escala.id))
+      );
+      const historico = membrosPorEscala.flat();
+      const membrosUltimaEscala = membrosPorEscala[0] || [];
+      return calcularSugestao(equipe, historico, membrosUltimaEscala);
     } catch (err) {
       setError(err.message);
       return null;
@@ -133,17 +137,34 @@ export function useEscala() {
   };
 }
 
-function calcularSugestao(equipe, membrosUltimaConfirmada = []) {
-  const idsQueTrabalharam = new Set(
+function calcularSugestao(
+  equipe,
+  membrosHistorico = [],
+  membrosUltimaConfirmada = []
+) {
+  const idsQueTrabalharamNoUltimo = new Set(
     membrosUltimaConfirmada
       .filter((membro) => membro.situacao === 'TRABALHA')
       .map((membro) => membro.balconista_id || membro.motoboy_id)
   );
+  const quantidadeTrabalhos = new Map();
+  membrosHistorico
+    .filter((membro) => membro.situacao === 'TRABALHA')
+    .forEach((membro) => {
+      const id = membro.balconista_id || membro.motoboy_id;
+      if (id) {
+        quantidadeTrabalhos.set(id, (quantidadeTrabalhos.get(id) || 0) + 1);
+      }
+    });
 
   const ordenada = [...(equipe || [])].sort((a, b) => {
-    const aTrabalhou = idsQueTrabalharam.has(a.id) ? 1 : 0;
-    const bTrabalhou = idsQueTrabalharam.has(b.id) ? 1 : 0;
-    return aTrabalhou - bTrabalhou || a.nome.localeCompare(b.nome);
+    const aQuantidade = quantidadeTrabalhos.get(a.id) || 0;
+    const bQuantidade = quantidadeTrabalhos.get(b.id) || 0;
+    const aTrabalhouNoUltimo = idsQueTrabalharamNoUltimo.has(a.id) ? 1 : 0;
+    const bTrabalhouNoUltimo = idsQueTrabalharamNoUltimo.has(b.id) ? 1 : 0;
+    return aQuantidade - bQuantidade
+      || aTrabalhouNoUltimo - bTrabalhouNoUltimo
+      || a.nome.localeCompare(b.nome);
   });
 
   const toMember = (pessoa, situacao) => ({
