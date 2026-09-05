@@ -1,12 +1,12 @@
 import { supabase } from '../supabaseClient';
 
-export async function executarAcaoAdministrativa(action, payload, credentials) {
-  if (!credentials?.login || !credentials?.pin) {
-    throw new Error('Sessão administrativa expirada. Faça login novamente para continuar.');
+export async function executarAcaoAdministrativa(action, payload, user) {
+  if (!user?.id) {
+    throw new Error('Usuário não identificado. Faça login novamente para continuar.');
   }
 
   const { data, error } = await supabase.functions.invoke('admin-feriados', {
-    body: { action, payload, credentials }
+    body: { action, payload, actor: { id: user.id } }
   });
 
   if (error) {

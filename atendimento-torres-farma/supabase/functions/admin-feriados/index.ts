@@ -52,16 +52,15 @@ const supabaseUrl = deno.env.get('SUPABASE_URL')!
 const serviceRoleKey = deno.env.get('SERVICE_ROLE_KEY')!
 const adminClient = createClient(supabaseUrl, serviceRoleKey)
 
-async function validarAdmin(credentials: { login?: string; pin?: string }) {
-  if (!credentials?.login || !credentials?.pin) {
-    throw new Error('Credenciais administrativas ausentes.')
+async function validarAdmin(actor: { id?: string }) {
+  if (!actor?.id) {
+    throw new Error('Usuário não identificado.')
   }
 
   const { data, error } = await adminClient
     .from('users')
     .select('id, role, ativo')
-    .ilike('login', credentials.login.trim())
-    .eq('pin', credentials.pin)
+    .eq('id', actor.id)
     .eq('ativo', true)
     .maybeSingle()
 
@@ -105,6 +104,27 @@ async function executarAcao(
       .single()
   }
   if (action === 'DELETAR_FERIADO') {
+    const { data: escalas, error: escalasError } = await adminClient
+      .from('escalas_feriados')
+      .select('id')
+      .eq('feriado_id', payload.id)
+    if (escalasError) throw escalasError
+
+    const escalaIds = (escalas || []).map((escala: { id: string }) => escala.id)
+    if (escalaIds.length) {
+      const { error: membrosError } = await adminClient
+        .from('escala_feriados_membros')
+        .delete()
+        .in('escala_id', escalaIds)
+      if (membrosError) throw membrosError
+
+      const { error: escalasDeleteError } = await adminClient
+        .from('escalas_feriados')
+        .delete()
+        .in('id', escalaIds)
+      if (escalasDeleteError) throw escalasDeleteError
+    }
+
     return adminClient.from('feriados').delete().eq('id', payload.id)
   }
   if (action === 'SALVAR_ESCALA') {
@@ -197,11 +217,6 @@ async function executarAcao(
       .eq('id', payload.id)
       .single()
     if (escalaError) throw escalaError
-    if (escala.status === 'CONFIRMADA') {
-      throw new Error(
-        'Escalas confirmadas fazem parte do histórico e não podem ser excluídas.',
-      )
-    }
     const { error: membrosError } = await adminClient
       .from('escala_feriados_membros')
       .delete()
@@ -260,8 +275,8 @@ deno.serve(async (request: Request) => {
   }
 
   try {
-    const { action, payload, credentials } = await request.json()
-    const admin = await validarAdmin(credentials)
+    const { action, payload, actor } = await request.json()
+    const admin = await validarAdmin(actor)
     const result = await executarAcao(action, payload || {}, admin)
     if (result.error) throw result.error
     return jsonResponse({ success: true, data: result.data ?? null }, request)

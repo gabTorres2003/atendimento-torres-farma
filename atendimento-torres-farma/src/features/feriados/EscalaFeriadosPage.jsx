@@ -61,7 +61,7 @@ const EMPTY_DRAFT = {
 };
 
 export default function EscalaFeriadosPage() {
-  const { user, adminCredentials } = useAuth();
+  const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
   const {
@@ -236,9 +236,9 @@ export default function EscalaFeriadosPage() {
 
     let result;
     if (editingFeriadoId) {
-      result = await atualizarFeriado(editingFeriadoId, feriadoForm, adminCredentials);
+      result = await atualizarFeriado(editingFeriadoId, feriadoForm, user);
     } else {
-      result = await criarFeriado({ ...feriadoForm, created_by: user?.id || null }, adminCredentials);
+      result = await criarFeriado({ ...feriadoForm, created_by: user?.id || null }, user);
     }
 
     if (result.success) {
@@ -254,7 +254,7 @@ export default function EscalaFeriadosPage() {
     if (!editingFeriadoId) return;
     if (!window.confirm('Tem certeza que deseja excluir este feriado? A escala associada também será removida.')) return;
 
-    const result = await deletarFeriado(editingFeriadoId, adminCredentials);
+    const result = await deletarFeriado(editingFeriadoId, user);
     if (result.success) {
       setShowFeriadoModal(false);
       setFeriadoForm({ ...EMPTY_FORM });
@@ -315,7 +315,7 @@ export default function EscalaFeriadosPage() {
         draft.horarioInicio,
         draft.horarioFim,
         user?.id,
-        adminCredentials
+        user
       );
 
       if (result.success) {
@@ -356,7 +356,7 @@ export default function EscalaFeriadosPage() {
     if (actionLoading) return;
     setActionLoading('confirmar');
     try {
-      const result = await confirmarEscala(selectedFeriado.id, user?.id, adminCredentials);
+      const result = await confirmarEscala(selectedFeriado.id, user?.id, user);
       if (result.success) {
         setStatusEscala('CONFIRMADA');
       } else {
@@ -375,7 +375,7 @@ export default function EscalaFeriadosPage() {
     if (actionLoading) return;
     setActionLoading('excluir');
     try {
-      const result = await deletarEscala(selectedFeriado.id, adminCredentials);
+      const result = await deletarEscala(selectedFeriado.id, user);
       if (result.success) {
         setDraft({ ...EMPTY_DRAFT });
         setStatusEscala('PENDENTE');
