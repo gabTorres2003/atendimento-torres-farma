@@ -58,6 +58,7 @@ export default function FaltasRupturasPage() {
     defaultValues: {
       nome_produto: '',
       ean_dna: '',
+      quantidade: '1',
       falta_dna: 'SIM'
     }
   });
@@ -186,10 +187,16 @@ export default function FaltasRupturasPage() {
       setUrgenciaError('O nome do produto é obrigatório.');
       return;
     }
+    const quantidade = Number(data.quantidade);
+    if (!Number.isInteger(quantidade) || quantidade <= 0) {
+      setUrgenciaError('A quantidade deve ser um número inteiro maior que zero.');
+      return;
+    }
 
     const result = await salvarUrgencia({
       nome_produto: nomeProduto,
       ean_dna: data.ean_dna ? String(data.ean_dna).trim().toUpperCase() : null,
+      quantidade,
       falta_dna: data.falta_dna === 'SIM',
       usuario_registro: user?.nome || 'Balcão'
     });
@@ -198,6 +205,7 @@ export default function FaltasRupturasPage() {
       urgenciaForm.reset({
         nome_produto: '',
         ean_dna: '',
+        quantidade: '1',
         falta_dna: 'SIM'
       });
       AuditoriaRepository.registrarAcesso(user?.nome || 'Balcão', 'URGENCIA', `Registrou urgência do produto ${nomeProduto}.`);
@@ -447,12 +455,27 @@ export default function FaltasRupturasPage() {
                 )}
               </div>
 
-              <FormInput
-                label="EAN ou código DNA"
-                id="urgencia_ean_dna"
-                placeholder="Opcional"
-                register={urgenciaForm.register('ean_dna')}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px' }}>
+                <FormInput
+                  label="EAN ou código DNA"
+                  id="urgencia_ean_dna"
+                  placeholder="Opcional"
+                  register={urgenciaForm.register('ean_dna')}
+                />
+                <FormInput
+                  label="Quantidade *"
+                  id="urgencia_quantidade"
+                  type="number"
+                  min="1"
+                  step="1"
+                  register={urgenciaForm.register('quantidade', {
+                    required: 'A quantidade é obrigatória.',
+                    min: { value: 1, message: 'Informe uma quantidade maior que zero.' },
+                    validate: (value) => Number.isInteger(Number(value)) || 'Informe um número inteiro.'
+                  })}
+                  error={urgenciaForm.formState.errors.quantidade}
+                />
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
@@ -547,6 +570,7 @@ export default function FaltasRupturasPage() {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                   <th style={{ padding: '12px 16px' }}>Produto</th>
+                  <th style={{ padding: '12px 16px' }}>Quantidade</th>
                   <th style={{ padding: '12px 16px' }}>Falta no DNA</th>
                   <th style={{ padding: '12px 16px' }}>Usuário</th>
                   <th style={{ padding: '12px 16px' }}>Data/hora</th>
@@ -557,6 +581,7 @@ export default function FaltasRupturasPage() {
                 {urgencias.map((item) => (
                   <tr key={item.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: '700', color: '#b45309' }}>{item.nome_produto}</td>
+                    <td style={{ padding: '12px 16px' }}>{item.quantidade}</td>
                     <td style={{ padding: '12px 16px' }}>{item.falta_dna ? 'SIM' : 'NÃO'}</td>
                     <td style={{ padding: '12px 16px' }}>{item.usuario_registro || 'Balcão'}</td>
                     <td style={{ padding: '12px 16px' }}>{formatarData(item.created_at)}</td>

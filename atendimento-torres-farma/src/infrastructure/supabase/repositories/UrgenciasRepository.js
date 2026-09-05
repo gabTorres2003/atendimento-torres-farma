@@ -78,6 +78,7 @@ export const UrgenciasRepository = {
     const registro = {
       nome_produto: produtoNormalizado,
       ean_dna: payload.ean_dna ? String(payload.ean_dna).trim().toUpperCase() : null,
+      quantidade: payload.quantidade,
       falta_dna: Boolean(payload.falta_dna),
       usuario_registro: payload.usuario_registro || 'Balcão',
       created_at: new Date().toISOString()
