@@ -21,6 +21,7 @@ import {
   CIDADE_CODIGO_DNA,
   CIDADE_NOME,
   calcularProgresso,
+  completarTelefoneNoBlur,
   formatarTelefone,
   normalizarTelefone,
   paraMaiusculas,
@@ -29,6 +30,7 @@ import {
 
 const VALORES_VAZIOS = {
   nome: '',
+  sobrenome: '',
   telefone: '',
   rua: '',
   numero: '',
@@ -249,14 +251,24 @@ export default function CadastroPadraoPage() {
       {/* --- FORMULÁRIO --- */}
       <Card title="Preenchimento" icon={ListChecks}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Input
-            label="Nome Completo *"
-            id="campo_nome"
-            placeholder="Ex: MARIA DE SOUZA"
-            value={dados.nome}
-            onChange={(evento) => alterar('nome', evento.target.value)}
-            copyValue={copiaTexto(dados.nome)}
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Input
+              label="Nome *"
+              id="campo_nome"
+              placeholder="Ex: MARIA"
+              value={dados.nome}
+              onChange={(evento) => alterar('nome', evento.target.value)}
+              copyValue={copiaTexto(dados.nome)}
+            />
+            <Input
+              label="Sobrenome *"
+              id="campo_sobrenome"
+              placeholder="Ex: DE SOUZA"
+              value={dados.sobrenome}
+              onChange={(evento) => alterar('sobrenome', evento.target.value)}
+              copyValue={copiaTexto(dados.sobrenome)}
+            />
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <Input
@@ -268,11 +280,17 @@ export default function CadastroPadraoPage() {
               placeholder="Ex: 22992052215"
               value={dados.telefone}
               onChange={(evento) => alterar('telefone', evento.target.value.replace(/\D/g, '').slice(0, 13))}
+              onBlur={(evento) => {
+                const completado = completarTelefoneNoBlur(evento.target.value);
+                if (completado !== evento.target.value) {
+                  setDados((atual) => ({ ...atual, telefone: completado }));
+                }
+              }}
               copyValue={telefoneFinal || copiaTexto(dados.telefone)}
               hint={
                 telefoneFinal
-                  ? `Salvo/copiado como: ${telefoneFinal} (${formatarTelefone(telefoneFinal)})`
-                  : 'Aceita 9, 11 ou 13 dígitos — completamos DDD 22 e código 55.'
+                  ? `Copiado como: ${telefoneFinal} (${formatarTelefone(telefoneFinal)})`
+                  : 'Ao sair do campo, completa automaticamente: 9 dígitos → 5522..., 11 dígitos → 55...'
               }
             />
             <Input

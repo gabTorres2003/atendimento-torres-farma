@@ -35,6 +35,13 @@ export const normalizarTelefone = (valor = '') => {
   return null;
 };
 
+// Aplicado ao sair do campo: completa o numero quando possivel.
+// Se nao for completavel (ex.: 10 digitos), devolve o valor original intacto.
+export const completarTelefoneNoBlur = (valor = '') => {
+  const digitos = String(valor || '').replace(/\D/g, '').slice(0, 13);
+  return normalizarTelefone(digitos) || digitos;
+};
+
 // Exibicao: +55 (22) 99205-2215
 export const formatarTelefone = (valor = '') => {
   const digitos = String(valor || '').replace(/\D/g, '');
@@ -52,13 +59,14 @@ export const filtrarBairros = (bairros = [], termo = '') => {
 // --- Progresso de preenchimento -------------------------------------------
 // Obrigatorios pesam mais; opcionais completam ate 100%.
 export const CAMPOS_CADASTRO = [
-  { id: 'nome', rotulo: 'Nome completo', obrigatorio: true, peso: 16 },
-  { id: 'telefone', rotulo: 'Telefone', obrigatorio: true, peso: 16 },
-  { id: 'rua', rotulo: 'Rua', obrigatorio: true, peso: 16 },
-  { id: 'numero', rotulo: 'Número', obrigatorio: true, peso: 16 },
-  { id: 'bairro_id', rotulo: 'Bairro', obrigatorio: true, peso: 16 },
-  { id: 'referencia', rotulo: 'Referência', obrigatorio: false, peso: 10 },
-  { id: 'data_nascimento', rotulo: 'Data de nascimento', obrigatorio: false, peso: 10 }
+  { id: 'nome', rotulo: 'Nome', obrigatorio: true, peso: 14 },
+  { id: 'sobrenome', rotulo: 'Sobrenome', obrigatorio: true, peso: 14 },
+  { id: 'telefone', rotulo: 'Telefone', obrigatorio: true, peso: 14 },
+  { id: 'rua', rotulo: 'Rua', obrigatorio: true, peso: 14 },
+  { id: 'numero', rotulo: 'Número', obrigatorio: true, peso: 14 },
+  { id: 'bairro_id', rotulo: 'Bairro', obrigatorio: true, peso: 14 },
+  { id: 'referencia', rotulo: 'Referência', obrigatorio: false, peso: 8 },
+  { id: 'data_nascimento', rotulo: 'Data de nascimento', obrigatorio: false, peso: 8 }
 ];
 
 export const campoPreenchido = (campo, valor) => {
