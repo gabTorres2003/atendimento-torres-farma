@@ -102,25 +102,36 @@ A IA deve considerar que este é um **sistema operacional de uma drogaria**, por
 
 # 5. Banco de dados
 
+> Estrutura confirmada por dump do schema do projeto Supabase do Balcão.
+> Em caso de divergência com o banco real, **o banco é a fonte de verdade**:
+> confirme no Supabase antes de assumir que este documento está atualizado.
+
 ## 5.1 Tabela `users`
 
 Tabela responsável pelos usuários/acesso ao sistema.
 
 | Coluna | Tipo | Restrições |
 |---|---|---|
-| `id` | uuid | Primary Key |
-| `nome` | text | — |
-| `pin` | varchar | Unique |
-| `role` | text | — |
-| `ativo` | bool | Nullable |
-| `created_at` | timestamptz | Nullable |
-| `login` | text | Nullable |
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `nome` | text | NOT NULL |
+| `pin` | varchar | NOT NULL, **sem UNIQUE** |
+| `role` | text | NOT NULL, default `'balconista'` |
+| `ativo` | bool | Nullable, default `true` |
+| `created_at` | timestamptz | Nullable, default `timezone('utc', now())` |
+| `login` | text | Nullable, **sem UNIQUE** |
 
 ### Observações
 
 - `id` identifica unicamente o usuário.
-- `pin` possui restrição `UNIQUE`.
-- `role` representa o papel/permissão do usuário.
+- `pin` **não** possui restrição `UNIQUE` no banco, e `login` também não.
+  O login (`AuthProvider`) busca com `.ilike('login', ...).eq('pin', ...)
+  .eq('ativo', true).single()`; PIN ou login duplicados fazem o `.single()`
+  falhar. Não alterar essa consulta nem "corrigir" com dados duplicados.
+- `role` representa o papel/permissão do usuário (default `balconista`).
+  O banco **não** tem CHECK nessa coluna; os valores usados pelo código são
+  `admin`, `balconista` e `caixa` (comparações variam entre exato `'admin'` e
+  comparação case-insensitive). Valor divergente não é rejeitado pelo banco —
+  revise com cautela.
 - `ativo` permite controlar se o usuário está ativo.
 
 ---
@@ -131,13 +142,13 @@ Tabela utilizada para medicamentos/produtos diversos.
 
 | Coluna | Tipo | Restrições |
 |---|---|---|
-| `id` | uuid | Primary Key |
-| `produto` | text | — |
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `produto` | text | NOT NULL |
 | `codigo_diversos` | text | Nullable |
 | `preco` | numeric | Nullable |
-| `categoria` | text | — |
+| `categoria` | text | NOT NULL |
 | `classificacao` | text | Nullable |
-| `created_at` | timestamptz | Nullable |
+| `created_at` | timestamptz | Nullable, default `timezone('utc', now())` |
 
 ### Observações
 
@@ -154,20 +165,20 @@ Tabela principal para registro e acompanhamento de encomendas.
 
 | Coluna | Tipo | Restrições |
 |---|---|---|
-| `id` | uuid | Primary Key |
-| `cliente` | text | — |
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `cliente` | text | NOT NULL |
 | `telefone` | text | Nullable |
-| `produto` | text | — |
+| `produto` | text | NOT NULL |
 | `data_encomenda` | date | Nullable |
-| `status` | text | Nullable |
+| `status` | text | Nullable, default `'Pendente'` |
 | `fornecedor` | text | Nullable |
 | `vendedor` | text | Nullable |
-| `created_at` | timestamptz | Nullable |
-| `quantidade` | text | Nullable |
-| `pagamento` | text | Nullable |
-| `comprado` | bool | Nullable |
+| `created_at` | timestamptz | Nullable, default `timezone('utc', now())` |
+| `quantidade` | text | Nullable, default `'1'` (texto, não inteiro) |
+| `pagamento` | text | Nullable, default `'Receber na entrega'` |
+| `comprado` | bool | Nullable, default `false` |
 | `data_compra` | date | Nullable |
-| `entregue` | bool | Nullable |
+| `entregue` | bool | Nullable, default `false` |
 | `codigo_produto` | text | Nullable |
 | `data_prevista` | date | Nullable |
 | `fornecedor_sugerido` | text | Nullable |
@@ -188,7 +199,9 @@ A tabela permite acompanhar o ciclo da encomenda, incluindo:
 10. pagamento;
 11. código do produto.
 
-**Não alterar nomes ou tipos dessas colunas sem necessidade comprovada.**
+`quantidade` é **texto** no banco (não `integer`); converter com cuidado ao
+somar/comparar. **Não alterar nomes ou tipos dessas colunas sem necessidade
+comprovada.**
 
 ---
 
@@ -198,18 +211,154 @@ Tabela destinada ao registro de ações relacionadas às encomendas.
 
 | Coluna | Tipo | Restrições |
 |---|---|---|
-| `id` | uuid | Primary Key |
-| `vendedor` | text | — |
-| `acao` | text | — |
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `vendedor` | text | NOT NULL |
+| `acao` | text | NOT NULL |
 | `produto` | text | Nullable |
 | `detalhes` | text | Nullable |
-| `data_hora` | timestamptz | Nullable |
+| `data_hora` | timestamptz | Nullable, default `timezone('utc', now())` |
 
 ### Regra importante
 
 A auditoria é importante para rastreabilidade.
 
 Quando uma funcionalidade existente registra ações nessa tabela, a IA **não deve remover, ignorar ou substituir esse mecanismo** sem que isso faça parte explícita da solicitação.
+
+---
+
+## 5.5 Tabela `rupturas`
+
+Registro de faltas/rupturas informadas no atendimento.
+
+| Coluna | Tipo | Restrições |
+|---|---|---|
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `nome_produto` | text | NOT NULL |
+| `ean_dna` | text | Nullable |
+| `canal_procura` | text | NOT NULL, default `'BALCÃO'`, CHECK (`BALCÃO`, `WHATSAPP`, `TELEFONE`, `OUTROS`) |
+| `nome_cliente` | text | NOT NULL |
+| `quantidade_solicitada` | integer | NOT NULL, default `1`, CHECK `> 0` |
+| `telefone_cliente` | text | Nullable |
+| `usuario_registro` | text | NOT NULL, default `'Balcão'` |
+| `created_at` | timestamptz | NOT NULL, default `now()` |
+
+Contém dados pessoais (`nome_cliente`, `telefone_cliente`). Não expor em
+consultas públicas nem ampliar acesso sem avaliar RLS/LGPD.
+
+---
+
+## 5.6 Tabela `urgencias`
+
+Registro de urgências de produto (inclusive quando o item não está no DNA).
+
+| Coluna | Tipo | Restrições |
+|---|---|---|
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `nome_produto` | text | NOT NULL |
+| `ean_dna` | text | Nullable |
+| `falta_dna` | bool | NOT NULL, default `false` |
+| `usuario_registro` | text | Nullable |
+| `created_at` | timestamptz | NOT NULL, default `now()` |
+| `quantidade` | integer | NOT NULL, default `1`, CHECK `> 0` |
+
+---
+
+## 5.7 Tabela `feriados`
+
+Cadastro de feriados e pontos facultativos.
+
+| Coluna | Tipo | Restrições |
+|---|---|---|
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `data` | date | NOT NULL |
+| `nome` | text | NOT NULL |
+| `abrangencia` | text | NOT NULL, CHECK (`NACIONAL`, `ESTADUAL`, `MUNICIPAL`) |
+| `natureza` | text | NOT NULL, default `'FERIADO'`, CHECK (`FERIADO`, `PONTO_FACULTATIVO`) |
+| `observacao` | text | Nullable |
+| `ativo` | bool | NOT NULL, default `true` |
+| `created_by` | uuid | Nullable, FK → `users(id)` |
+| `created_at` | timestamptz | NOT NULL, default `now()` |
+| `updated_at` | timestamptz | NOT NULL, default `now()` |
+
+---
+
+## 5.8 Tabela `escalas_feriados`
+
+Escala de trabalho vinculada a um feriado.
+
+| Coluna | Tipo | Restrições |
+|---|---|---|
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `feriado_id` | uuid | NOT NULL, FK → `feriados(id)` |
+| `status` | text | NOT NULL, default `'RASCUNHO'`, CHECK (`RASCUNHO`, `PENDENTE`, `CONFIRMADA`) |
+| `horario_inicio` | time | Nullable |
+| `horario_fim` | time | Nullable |
+| `criada_por` | uuid | Nullable, FK → `users(id)` |
+| `confirmada_por` | uuid | Nullable, FK → `users(id)` |
+| `criada_em` | timestamptz | NOT NULL, default `now()` |
+| `confirmada_em` | timestamptz | Nullable |
+| `updated_at` | timestamptz | NOT NULL, default `now()` |
+
+---
+
+## 5.9 Tabela `escala_feriados_membros`
+
+Pessoas incluídas em uma escala de feriado.
+
+| Coluna | Tipo | Restrições |
+|---|---|---|
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `escala_id` | uuid | NOT NULL, FK → `escalas_feriados(id)` |
+| `tipo_funcionario` | text | NOT NULL, CHECK (`BALCONISTA`, `CAIXA`, `MOTOBOY`) |
+| `balconista_id` | uuid | Nullable, FK → `users(id)` |
+| `situacao` | text | NOT NULL, default `'FOLGA'`, CHECK (`TRABALHA`, `FOLGA`) |
+| `horario_inicio` | time | Nullable |
+| `horario_fim` | time | Nullable |
+| `created_at` | timestamptz | NOT NULL, default `now()` |
+| `updated_at` | timestamptz | NOT NULL, default `now()` |
+| `motoboy_id` | uuid | Nullable, **sem FK declarada** (motoboys ficam no projeto Supabase do Caixa) |
+
+`tipo_funcionario = 'MOTOBOY'` usa `motoboy_id`; os demais usam
+`balconista_id`. O `motoboy_id` referencia a tabela `motoboys` do **outro**
+projeto Supabase (Caixa), não deste banco — ver `CaixaMotoboysRepository`.
+
+---
+
+## 5.10 Tabela `bairros`
+
+Base oficial de bairros do Cadastro Padrão.
+
+| Coluna | Tipo | Restrições |
+|---|---|---|
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `nome_oficial` | text | NOT NULL, UNIQUE |
+| `ativo` | bool | NOT NULL, default `true` |
+| `created_at` | timestamptz | NOT NULL, default `now()` |
+
+---
+
+## 5.11 Tabela `clientes`
+
+Cadastro Padrão de clientes (dados pessoais e endereço).
+
+| Coluna | Tipo | Restrições |
+|---|---|---|
+| `id` | uuid | Primary Key, default `gen_random_uuid()` |
+| `nome` | text | NOT NULL |
+| `telefone` | text | NOT NULL |
+| `rua` | text | NOT NULL |
+| `numero` | text | NOT NULL |
+| `bairro_id` | uuid | NOT NULL, FK → `bairros(id)` |
+| `referencia` | text | Nullable |
+| `cidade` | text | NOT NULL, default `'CAMPOS DOS GOYTACAZES'` |
+| `cidade_codigo_dna` | text | NOT NULL, default `'3190'` |
+| `data_nascimento` | date | Nullable |
+| `usuario_registro` | text | Nullable |
+| `created_at` | timestamptz | NOT NULL, default `now()` |
+
+Contém dados pessoais (nome, telefone, endereço, data de nascimento). A cópia
+para o DNA é **manual**; o Balcão não escreve no DNA. Qualquer ampliação de
+acesso/consulta exige avaliação de LGPD e RLS.
 
 ---
 
@@ -249,6 +398,22 @@ Command: ALL
 Roles: public
 USING: true
 ```
+
+## `bairros` e `clientes`
+
+Definidas na migration `20260925120000_cadastro_padrao_clientes.sql`:
+
+```text
+acesso_livre_bairros   — ALL — USING true / WITH CHECK true
+acesso_livre_clientes  — ALL — USING true / WITH CHECK true
+```
+
+Como `clientes` contém dados pessoais, esse acesso livre é um risco a ser
+considerado antes de qualquer ampliação da consulta.
+
+> As policies de `rupturas`, `urgencias`, `feriados`, `escalas_feriados` e
+> `escala_feriados_membros` não estão documentadas aqui (não vieram no schema
+> informado). **Confirme no Supabase antes de assumir que estão protegidas.**
 
 ### ATENÇÃO
 
@@ -681,7 +846,52 @@ Informe riscos, limitações ou decisões importantes.
 
 ---
 
-# 15. Regra final
+# 15. Integração de consulta ao DNA (via Cotação)
+
+O módulo **Faltas e Rupturas** permite consultar um produto no DNA pelo
+código interno ou EAN. A consulta é somente leitura e passa por:
+
+```text
+Navegador → Edge Function `consulta-dna` (Supabase do Balcão)
+          → backend do Cotação (`GET /api/integracao-balcao/produtos`)
+          → DNA / Firebird (`PRODUTOS`)
+```
+
+Regras desta integração:
+
+- o navegador nunca acessa o Firebird e nunca recebe credenciais do
+  Cotação/DNA;
+- as credenciais ficam nos secrets da Edge Function
+  (`COTACAO_API_URL`, `COTACAO_INTEGRACAO_USUARIO`, `COTACAO_INTEGRACAO_PIN`);
+- a resposta traz apenas código, EAN, descrição, situação e origem (`DNA`);
+  não traz preço, custo, estoque nem dados pessoais;
+- a consulta é manual, tem cache curto em memória e nunca sobrescreve
+  campos preenchidos sem ação explícita do atendente;
+- nenhuma tabela, coluna, policy ou migration foi criada no Supabase do
+  Balcão para essa integração.
+
+Arquivos principais:
+
+```text
+supabase/functions/consulta-dna/index.ts
+src/infrastructure/integrations/dna/DnaProdutosRepository.js
+src/shared/components/inputs/ConsultaProdutoDna.jsx
+src/features/rupturas/FaltasRupturasPage.jsx
+```
+
+Detalhes, contrato do endpoint, pendências e limitações:
+`INTEGRACAO_DNA_COTACAO.md` (neste repositório) e
+`Cotacao-Drogaria/INTEGRACAO_BALCAO_DNA.md`.
+
+**Consulta de clientes do DNA não está implementada**: não existe tabela ou
+consulta de clientes do **DNA** confirmada nos repositórios. Não criar SQL por
+suposição. O que existe e está confirmado é o Cadastro Padrão **local** no
+Supabase do Balcão (`bairros` e `clientes` — seções 5.10 e 5.11), com cópia
+manual para o DNA; esse fluxo permanece inalterado.
+
+---
+
+# 16. Regra final
 
 > **Não altere o que não foi solicitado.**
 >

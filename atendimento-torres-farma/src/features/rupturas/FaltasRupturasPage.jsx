@@ -10,6 +10,7 @@ import { AuditoriaRepository } from '../../infrastructure/supabase/repositories/
 import { Card } from '../../shared/components/cards/Card';
 import { Button } from '../../shared/components/buttons/Button';
 import { FormInput } from '../../shared/components/forms/FormInput';
+import ConsultaProdutoDna from '../../shared/components/inputs/ConsultaProdutoDna';
 
 const canaisDisponiveis = ['BALCÃO', 'WHATSAPP', 'TELEFONE', 'OUTROS'];
 const faltaDnaOptions = ['SIM', 'NÃO'];
@@ -65,7 +66,22 @@ export default function FaltasRupturasPage() {
 
   const rupturaProdutoDigitado = rupturaForm.watch('nome_produto');
   const urgenciaProdutoDigitado = urgenciaForm.watch('nome_produto');
+  const rupturaEanDna = rupturaForm.watch('ean_dna');
+  const urgenciaEanDna = urgenciaForm.watch('ean_dna');
   const isAdmin = user?.role === 'admin';
+
+  // Aplica o produto do DNA somente por ação explícita do atendente.
+  const aplicarProdutoDna = (form, produto) => {
+    const descricao = String(produto?.descricao || '').trim();
+    if (!descricao) return;
+
+    form.setValue('nome_produto', descricao, { shouldValidate: true, shouldDirty: true });
+
+    const identificador = String(produto?.codbarras || produto?.codigo || '').trim();
+    if (identificador) {
+      form.setValue('ean_dna', identificador, { shouldValidate: true, shouldDirty: true });
+    }
+  };
 
   useEffect(() => {
     listarRupturas();
@@ -325,12 +341,18 @@ export default function FaltasRupturasPage() {
                 )}
               </div>
 
-              <FormInput
-                label="EAN ou código do DNA"
-                id="ruptura_ean_dna"
-                placeholder="Opcional"
-                register={rupturaForm.register('ean_dna')}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
+                <FormInput
+                  label="EAN ou código do DNA"
+                  id="ruptura_ean_dna"
+                  placeholder="Opcional"
+                  register={rupturaForm.register('ean_dna')}
+                />
+                <ConsultaProdutoDna
+                  codigo={rupturaEanDna}
+                  onSelecionar={(produto) => aplicarProdutoDna(rupturaForm, produto)}
+                />
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px', width: '100%' }}>
@@ -460,12 +482,18 @@ export default function FaltasRupturasPage() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px', alignItems: 'start' }}>
-                <FormInput
-                  label="EAN ou código DNA"
-                  id="urgencia_ean_dna"
-                  placeholder="Opcional"
-                  register={urgenciaForm.register('ean_dna')}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
+                  <FormInput
+                    label="EAN ou código DNA"
+                    id="urgencia_ean_dna"
+                    placeholder="Opcional"
+                    register={urgenciaForm.register('ean_dna')}
+                  />
+                  <ConsultaProdutoDna
+                    codigo={urgenciaEanDna}
+                    onSelecionar={(produto) => aplicarProdutoDna(urgenciaForm, produto)}
+                  />
+                </div>
                 <FormInput
                   label="Quantidade *"
                   id="urgencia_quantidade"

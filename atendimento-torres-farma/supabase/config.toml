@@ -2,3 +2,8 @@ project_id = "uddmenewrluxyewdyfxe"
 
 [functions.admin-feriados]
 verify_jwt = false
+
+# O Balcão usa autenticação própria (tabela users + PIN), não Supabase Auth.
+# A função valida o usuário ativo no servidor antes de consultar o Cotação.
+[functions.consulta-dna]
+verify_jwt = false
