@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AlertTriangle, PackageSearch, Search, ShieldAlert, Trash2 } from 'lucide-react';
 import { useAuth } from '../../core/hooks/useAuth';
@@ -11,6 +11,7 @@ import { Card } from '../../shared/components/cards/Card';
 import { Button } from '../../shared/components/buttons/Button';
 import { FormInput } from '../../shared/components/forms/FormInput';
 import ConsultaProdutoDna from '../../shared/components/inputs/ConsultaProdutoDna';
+import './FaltasRupturasPage.css';
 
 const canaisDisponiveis = ['BALCÃO', 'WHATSAPP', 'TELEFONE', 'OUTROS'];
 const faltaDnaOptions = ['SIM', 'NÃO'];
@@ -43,6 +44,7 @@ export default function FaltasRupturasPage() {
   const [rupturaError, setRupturaError] = useState('');
   const [urgenciaError, setUrgenciaError] = useState('');
   const [registroSelecionado, setRegistroSelecionado] = useState(null);
+  const ignorarSugestoesRef = useRef({ ruptura: false, urgencia: false });
 
   const rupturaForm = useForm({
     defaultValues: {
@@ -71,15 +73,29 @@ export default function FaltasRupturasPage() {
   const isAdmin = user?.role === 'admin';
 
   // Aplica o produto do DNA somente por ação explícita do atendente.
-  const aplicarProdutoDna = (form, produto) => {
+  const aplicarProdutoDna = (form, produto, contexto) => {
     const descricao = String(produto?.descricao || '').trim();
     if (!descricao) return;
 
+    // Evita que a lista de sugestões locais reapareça sobre o formulário
+    // logo após a seleção de um produto do DNA.
+    ignorarSugestoesRef.current[contexto] = true;
     form.setValue('nome_produto', descricao, { shouldValidate: true, shouldDirty: true });
 
     const identificador = String(produto?.codbarras || produto?.codigo || '').trim();
     if (identificador) {
       form.setValue('ean_dna', identificador, { shouldValidate: true, shouldDirty: true });
+    }
+  };
+
+  const selecionarSugestao = (contexto, form, nome) => {
+    ignorarSugestoesRef.current[contexto] = true;
+    form.setValue('nome_produto', nome, { shouldValidate: true, shouldDirty: true });
+
+    if (contexto === 'ruptura') {
+      setRupturaSugestoes([]);
+    } else {
+      setUrgenciaSugestoes([]);
     }
   };
 
@@ -89,6 +105,12 @@ export default function FaltasRupturasPage() {
   }, [listarRupturas, listarUrgencias]);
 
   useEffect(() => {
+    if (ignorarSugestoesRef.current.ruptura) {
+      ignorarSugestoesRef.current.ruptura = false;
+      setRupturaSugestoes([]);
+      return undefined;
+    }
+
     const termo = String(rupturaProdutoDigitado || '').trim();
     if (termo.length < 2) {
       setRupturaSugestoes([]);
@@ -108,6 +130,12 @@ export default function FaltasRupturasPage() {
   }, [rupturaProdutoDigitado]);
 
   useEffect(() => {
+    if (ignorarSugestoesRef.current.urgencia) {
+      ignorarSugestoesRef.current.urgencia = false;
+      setUrgenciaSugestoes([]);
+      return undefined;
+    }
+
     const termo = String(urgenciaProdutoDigitado || '').trim();
     if (termo.length < 2) {
       setUrgenciaSugestoes([]);
@@ -264,90 +292,97 @@ export default function FaltasRupturasPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-        <h2 style={{ color: 'var(--color-primary)', fontSize: '1.6rem', fontWeight: 'bold' }}>
-          Faltas e Rupturas
-        </h2>
-      </div>
+    <div className="faltas-page">
+      <header className="faltas-page__header">
+        <span className="faltas-page__eyebrow">Atendimento · Produtos</span>
+        <h2 className="faltas-page__title">Faltas e Rupturas</h2>
+        <p className="faltas-page__subtitle">
+          Pesquise o produto no DNA e registre a solicitação do cliente ou a prioridade de compra.
+          As duas operações usam a mesma busca, com contextos e registros separados.
+        </p>
+      </header>
 
-      <Card>
-        <div style={{ display: 'grid', gap: '12px', fontSize: '0.95rem', color: 'var(--color-text-main)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-primary)', fontWeight: 'bold' }}>
+      <section className="faltas-page__contexts" aria-label="Diferença entre ruptura e urgência">
+        <div className="context-card context-card--ruptura">
+          <span className="context-card__icon" aria-hidden="true">
             <AlertTriangle size={18} />
-            <span>Ruptura</span>
+          </span>
+          <div>
+            <h3>Ruptura</h3>
+            <p>Produto solicitado pelo cliente que não está disponível em estoque.</p>
           </div>
-          <p style={{ color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
-            Registro de uma solicitação do cliente, realizada no balcão ou por outros canais, de um produto que não temos disponível em estoque.
-          </p>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#b45309', fontWeight: 'bold' }}>
-            <ShieldAlert size={18} />
-            <span>Urgência</span>
-          </div>
-          <p style={{ color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
-            Produto de alto giro e procura que já está na falta/lista de pedidos da drogaria e que deve receber maior atenção no momento da compra, podendo ser comprado em maior quantidade.
-          </p>
         </div>
-      </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: '24px', width: '100%', alignItems: 'stretch' }}>
-        <Card title="Registrar ruptura" icon={PackageSearch}>
+        <div className="context-card context-card--urgencia">
+          <span className="context-card__icon" aria-hidden="true">
+            <ShieldAlert size={18} />
+          </span>
+          <div>
+            <h3>Urgência</h3>
+            <p>Item de alto giro que deve receber prioridade na próxima compra.</p>
+          </div>
+        </div>
+      </section>
+
+      <div className="faltas-page__forms">
+        <Card
+          title="Registrar ruptura"
+          icon={PackageSearch}
+          className="faltas-page__form-card faltas-page__form-card--ruptura"
+        >
           <form onSubmit={rupturaForm.handleSubmit(handleRupturaSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '100%' }}>
             {rupturaError && <div className="form-alert-error">{rupturaError}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px', width: '100%' }}>
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
-                <label htmlFor="ruptura_nome_produto" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
-                  Nome do produto *
+            <div className="product-area">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
+                <input type="hidden" {...rupturaForm.register('ean_dna')} />
+                <ConsultaProdutoDna
+                  contexto="ruptura"
+                  codigo={rupturaEanDna}
+                  onCodigoChange={(valor) => rupturaForm.setValue('ean_dna', valor, { shouldValidate: true, shouldDirty: true })}
+                  onSelecionar={(produto) => aplicarProdutoDna(rupturaForm, produto, 'ruptura')}
+                />
+              </div>
+
+              <div className="product-field">
+                <label htmlFor="ruptura_nome_produto" className="product-field__label">
+                  Produto *
                 </label>
                 <input
                   id="ruptura_nome_produto"
                   type="text"
-                  placeholder="Ex: DIPIRONA 500MG 10 COMPRIMIDOS"
+                  placeholder="Ex.: DIPIRONA 500MG 10 COMPRIMIDOS"
                   {...rupturaForm.register('nome_produto', { required: 'O nome do produto é obrigatório.' })}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: rupturaForm.formState.errors.nome_produto ? '1px solid var(--color-error)' : '1px solid var(--color-border)',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    minWidth: 0,
-                    boxSizing: 'border-box'
-                  }}
+                  className={`product-field__input${rupturaForm.formState.errors.nome_produto ? ' has-error' : ''}`}
                 />
+                <span className="product-field__hint">
+                  Preenchido pela busca no DNA ou digitado manualmente.
+                </span>
 
                 {rupturaForm.formState.errors.nome_produto && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-error)' }}>{rupturaForm.formState.errors.nome_produto.message}</span>
+                  <span className="product-field__error">
+                    {rupturaForm.formState.errors.nome_produto.message}
+                  </span>
                 )}
 
                 {rupturaSugestoes.length > 0 && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '6px', background: '#fff', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 8px 18px rgba(15,23,42,0.12)', zIndex: 5, overflow: 'hidden' }}>
-                    {rupturaSugestoes.map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => {
-                          rupturaForm.setValue('nome_produto', item, { shouldValidate: true });
-                          setRupturaSugestoes([]);
-                        }}
-                        style={{ display: 'block', width: '100%', padding: '10px 12px', textAlign: 'left', border: 'none', background: '#fff', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--color-text-main)' }}
-                      >
-                        {item}
-                      </button>
-                    ))}
+                  <div className="product-suggestions" role="group" aria-label="Produtos já registrados em rupturas">
+                    <div className="product-suggestions__label">Já registrados anteriormente</div>
+                    <div className="product-suggestions__list">
+                      {rupturaSugestoes.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          className="product-suggestions__item"
+                          onClick={() => selecionarSugestao('ruptura', rupturaForm, item)}
+                        >
+                          <PackageSearch size={14} aria-hidden="true" />
+                          {item}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
-                <input type="hidden" {...rupturaForm.register('ean_dna')} />
-                <ConsultaProdutoDna
-                  codigo={rupturaEanDna}
-                  onCodigoChange={(valor) => rupturaForm.setValue('ean_dna', valor, { shouldValidate: true, shouldDirty: true })}
-                  onSelecionar={(produto) => aplicarProdutoDna(rupturaForm, produto)}
-                />
               </div>
             </div>
 
@@ -416,107 +451,110 @@ export default function FaltasRupturasPage() {
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <Button type="submit" icon={Search} isLoading={loadingRupturas}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
+              <Button type="submit" icon={Search} isLoading={loadingRupturas} style={{ width: 'auto', minWidth: '190px' }}>
                 Registrar ruptura
               </Button>
             </div>
           </form>
         </Card>
 
-        <Card title="Registrar urgência" icon={ShieldAlert}>
+        <Card
+          title="Registrar urgência"
+          icon={ShieldAlert}
+          className="faltas-page__form-card faltas-page__form-card--urgencia"
+        >
           <form onSubmit={urgenciaForm.handleSubmit(handleUrgenciaSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '100%' }}>
             {urgenciaError && <div className="form-alert-error">{urgenciaError}</div>}
 
-            <div style={{ padding: '16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', color: '#92400e', fontSize: '0.9rem', lineHeight: '1.5' }}>
+            <div style={{ padding: '14px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', color: '#92400e', fontSize: '0.88rem', lineHeight: '1.5' }}>
               Registre produtos que precisam de atenção prioritária na próxima compra.
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', width: '100%' }}>
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '7px', width: '100%', minWidth: 0 }}>
-                <label htmlFor="urgencia_nome_produto" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
+            <div className="product-area">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
+                <input type="hidden" {...urgenciaForm.register('ean_dna')} />
+                <ConsultaProdutoDna
+                  contexto="urgencia"
+                  codigo={urgenciaEanDna}
+                  onCodigoChange={(valor) => urgenciaForm.setValue('ean_dna', valor, { shouldValidate: true, shouldDirty: true })}
+                  onSelecionar={(produto) => aplicarProdutoDna(urgenciaForm, produto, 'urgencia')}
+                />
+              </div>
+
+              <div className="product-field">
+                <label htmlFor="urgencia_nome_produto" className="product-field__label">
                   Produto *
                 </label>
                 <input
                   id="urgencia_nome_produto"
                   type="text"
-                  placeholder="Ex: FRALDA HUGGIES G XG"
+                  placeholder="Ex.: FRALDA HUGGIES G XG"
                   {...urgenciaForm.register('nome_produto', { required: 'O nome do produto é obrigatório.' })}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: urgenciaForm.formState.errors.nome_produto ? '1px solid var(--color-error)' : '1px solid var(--color-border)',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    minWidth: 0,
-                    boxSizing: 'border-box'
-                  }}
+                  className={`product-field__input${urgenciaForm.formState.errors.nome_produto ? ' has-error' : ''}`}
                 />
+                <span className="product-field__hint">
+                  Preenchido pela busca no DNA ou digitado manualmente.
+                </span>
 
                 {urgenciaForm.formState.errors.nome_produto && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-error)' }}>{urgenciaForm.formState.errors.nome_produto.message}</span>
+                  <span className="product-field__error">
+                    {urgenciaForm.formState.errors.nome_produto.message}
+                  </span>
                 )}
 
                 {urgenciaSugestoes.length > 0 && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '6px', background: '#fff', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 8px 18px rgba(15,23,42,0.12)', zIndex: 5, overflow: 'hidden' }}>
-                    {urgenciaSugestoes.map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => {
-                          urgenciaForm.setValue('nome_produto', item, { shouldValidate: true });
-                          setUrgenciaSugestoes([]);
-                        }}
-                        style={{ display: 'block', width: '100%', padding: '10px 12px', textAlign: 'left', border: 'none', background: '#fff', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--color-text-main)' }}
-                      >
-                        {item}
-                      </button>
-                    ))}
+                  <div className="product-suggestions" role="group" aria-label="Produtos já registrados em urgências">
+                    <div className="product-suggestions__label">Já registrados anteriormente</div>
+                    <div className="product-suggestions__list">
+                      {urgenciaSugestoes.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          className="product-suggestions__item"
+                          onClick={() => selecionarSugestao('urgencia', urgenciaForm, item)}
+                        >
+                          <ShieldAlert size={14} aria-hidden="true" />
+                          {item}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px', alignItems: 'start' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
-                  <input type="hidden" {...urgenciaForm.register('ean_dna')} />
-                  <ConsultaProdutoDna
-                    codigo={urgenciaEanDna}
-                    onCodigoChange={(valor) => urgenciaForm.setValue('ean_dna', valor, { shouldValidate: true, shouldDirty: true })}
-                    onSelecionar={(produto) => aplicarProdutoDna(urgenciaForm, produto)}
-                  />
-                </div>
-                <FormInput
-                  label="Quantidade *"
-                  id="urgencia_quantidade"
-                  type="number"
-                  min="1"
-                  step="1"
-                  register={urgenciaForm.register('quantidade', {
-                    required: 'A quantidade é obrigatória.',
-                    min: { value: 1, message: 'Informe uma quantidade maior que zero.' },
-                    validate: (value) => Number.isInteger(Number(value)) || 'Informe um número inteiro.'
-                  })}
-                  error={urgenciaForm.formState.errors.quantidade}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', width: '100%', minWidth: 0 }}>
-                  <label htmlFor="urgencia_falta_dna" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
-                    Falta no DNA? *
-                  </label>
-                  <select
-                    id="urgencia_falta_dna"
-                    {...urgenciaForm.register('falta_dna', { required: 'Selecione uma opção.' })}
-                    style={{ width: '100%', minHeight: '46px', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-main)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
-                  >
-                    {faltaDnaOptions.map((opcao) => (
-                      <option key={opcao} value={opcao}>{opcao}</option>
-                    ))}
-                  </select>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px', alignItems: 'start' }}>
+              <FormInput
+                label="Quantidade *"
+                id="urgencia_quantidade"
+                type="number"
+                min="1"
+                step="1"
+                register={urgenciaForm.register('quantidade', {
+                  required: 'A quantidade é obrigatória.',
+                  min: { value: 1, message: 'Informe uma quantidade maior que zero.' },
+                  validate: (value) => Number.isInteger(Number(value)) || 'Informe um número inteiro.'
+                })}
+                error={urgenciaForm.formState.errors.quantidade}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', width: '100%', minWidth: 0 }}>
+                <label htmlFor="urgencia_falta_dna" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-text-main)', lineHeight: '1.4' }}>
+                  Falta no DNA? *
+                </label>
+                <select
+                  id="urgencia_falta_dna"
+                  {...urgenciaForm.register('falta_dna', { required: 'Selecione uma opção.' })}
+                  style={{ width: '100%', minHeight: '46px', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-main)', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
+                >
+                  {faltaDnaOptions.map((opcao) => (
+                    <option key={opcao} value={opcao}>{opcao}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
               <Button type="submit" icon={ShieldAlert} isLoading={loadingUrgencias} style={{ width: 'auto', minWidth: '190px' }}>
                 Registrar urgência
               </Button>
@@ -554,8 +592,7 @@ export default function FaltasRupturasPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            rupturaForm.setValue('nome_produto', produto.nome);
-                            setRupturaSugestoes([]);
+                            selecionarSugestao('ruptura', rupturaForm, produto.nome);
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
                           style={{ background: 'none', border: '1px solid var(--color-primary)', borderRadius: '8px', color: 'var(--color-primary)', fontWeight: '700', padding: '8px 12px', cursor: 'pointer' }}

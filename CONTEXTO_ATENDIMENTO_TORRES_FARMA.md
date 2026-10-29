@@ -876,8 +876,23 @@ Arquivos principais:
 supabase/functions/consulta-dna/index.ts
 src/infrastructure/integrations/dna/DnaProdutosRepository.js
 src/shared/components/inputs/ConsultaProdutoDna.jsx
+src/shared/components/inputs/ConsultaProdutoDna.css
 src/features/rupturas/FaltasRupturasPage.jsx
+src/features/rupturas/FaltasRupturasPage.css
 ```
+
+A interface da consulta é compartilhada entre **Rupturas** e **Urgências**:
+
+- um único campo alterna entre **Código / EAN**, **Nome** e
+  **Princípio ativo**, mantendo `Enter`, botão de busca e as mesmas consultas;
+- o produto só é aplicado ao formulário pelo botão **Selecionar** de cada
+  resultado (sem clique acidental na linha);
+- o componente é o mesmo nas duas abas; `contexto="ruptura"` ou
+  `contexto="urgencia"` muda apenas acento (azul/âmbar), rótulos e textos de
+  orientação;
+- cada instância usa IDs próprios (`useId`), pois as duas buscas convivem na
+  mesma página;
+- não houve mudança de contrato, validação, permissão ou gravação.
 
 Detalhes, contrato do endpoint, pendências e limitações:
 `INTEGRACAO_DNA_COTACAO.md` (neste repositório) e

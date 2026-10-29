@@ -63,16 +63,54 @@ O componente `ConsultaProdutoDna` é dono do campo de código: o
 e repassa o valor via `onCodigoChange`. Assim não existem dois campos
 duplicados para o mesmo dado.
 
-A consulta é sempre manual (não dispara a cada tecla) e aceita `Enter` nos
-dois blocos; `Enter` repetido é ignorado enquanto a consulta anterior está
+A consulta é sempre manual (não dispara a cada tecla) e aceita `Enter` no
+campo de busca; `Enter` repetido é ignorado enquanto a consulta anterior está
 em andamento, sem duplicar requisições. Há cache em memória de 5 minutos por
 código e por `tipo:termo` (texto em minúsculas). São tratados: código/termo
 inválido, produto não encontrado, lista vazia, lista truncada,
 indisponibilidade do gateway e timeout.
 
+### Interface de busca (Rupturas e Urgências)
+
+O componente `ConsultaProdutoDna` foi reorganizado em uma única experiência
+visual, compartilhada pelas duas operações:
+
+- **Um campo, três modos:** Código/EAN, Nome e Princípio ativo. O atendente
+  escolhe o modo e usa o mesmo campo; não existem dois campos concorrentes.
+- **Código/EAN:** aceita EAN ou código interno do DNA e consulta o produto
+  exato, com botão de busca, `Enter` e ação "Limpar resultado".
+- **Nome e princípio ativo:** executam a pesquisa textual já existente, com
+  lista curta, contagem de resultados e aviso de lista parcial.
+- **Seleção explícita:** cada resultado tem um botão "Selecionar"; o item
+  não é aplicado ao formulário ao clicar em qualquer área do cartão. Isso
+  reduz seleções acidentais entre produtos parecidos.
+- **Hierarquia do resultado:** nome em destaque; princípio ativo,
+  apresentação e fabricante em blocos comparáveis; códigos DNA/EAN em chips;
+  selo e aviso para produto inativo.
+- **Estados desenhados:** inicial, carregando (com skeleton), sem
+  resultados, erro e resultados encontrados.
+- **Contexto visual:** a busca recebe `contexto="ruptura"` ou
+  `contexto="urgencia"`. A estrutura é a mesma; apenas o acento (azul/âmbar),
+  o rótulo e a orientação mudam. O cartão de urgência também recebe acento
+  âmbar no topo.
+- **Acessibilidade:** rótulos associados ao campo, `aria-pressed` nos modos e
+  na seleção, `role="alert"` para erros, anúncio de resultados via
+  `aria-live`, foco visível e IDs únicos por instância (`useId`), já que a
+  tela renderiza duas buscas ao mesmo tempo.
+- **Sem mudança de contrato:** `DnaProdutosRepository`, Edge Function,
+  validações, cache, consultas e gravações no Supabase permanecem iguais.
+
+```text
+src/shared/components/inputs/ConsultaProdutoDna.jsx
+src/shared/components/inputs/ConsultaProdutoDna.css
+src/features/rupturas/FaltasRupturasPage.jsx
+src/features/rupturas/FaltasRupturasPage.css
+```
+
+
 ### Busca por descrição ou princípio ativo
 
-- O atendente escolhe **Descrição** (padrão) ou **Princípio ativo** e
+- O atendente escolhe **Nome** ou **Princípio ativo** no seletor de modo e
   digita de 2 a 40 caracteres.
 - A pesquisa roda no DNA pelo backend do Cotação; o navegador não conhece
   a URL interna nem credenciais.
@@ -83,7 +121,8 @@ indisponibilidade do gateway e timeout.
 - Quando existem mais itens do que o limite, a tela avisa para refinar o
   termo em vez de exibir uma lista enorme.
 - Cada item mostra descrição, princípio ativo, apresentação, fabricante,
-  código DNA, EAN e selo de inativo. O atendente clica no item para aplicar.
+  código DNA, EAN e selo de inativo. O atendente usa o botão **Selecionar**
+  para aplicar o produto ao formulário.
 
 ## Divisão de responsabilidade dos dados
 
@@ -216,14 +255,30 @@ Resultado esperado:
 ## Validação executada
 
 ```text
-npm run build  -> OK (Vite 8.1.1, 158 módulos)
+npm run build  -> OK (Vite 8.1.1, 159 módulos)
 npm run lint   -> falha por erros preexistentes do projeto
-                  (ex.: `React` importado e não usado em vários arquivos)
+                  (24 erros e 1 aviso, nenhum nos arquivos alterados)
 ```
 
-Os arquivos novos não introduzem erros de lint. O aviso
-`react-hooks/incompatible-library` para `react-hook-form.watch()` já existia
-na tela e permanece como aviso.
+Os arquivos alterados não introduzem erros de lint. O único diagnóstico neles
+é o aviso `react-hooks/incompatible-library` para `react-hook-form.watch()`,
+que já existia na tela e permanece como aviso.
+
+Validação visual da nova interface (29/10/2026), em navegador real com a Edge
+Function simulada em service worker:
+
+```text
+1440px  inicial, carregando, resultados por nome, seleção aplicada,
+        código encontrado via Enter, sem resultado, erro e aviso de lista
+        truncada                                          -> OK
+430px   layout inicial e lista de resultados              -> OK
+DOM     sem IDs duplicados com as duas buscas na tela     -> OK
+Rede    duplo Enter gerou exatamente 1 requisição         -> OK
+Console sem erros nem avisos durante a interação          -> OK
+```
+
+Essa validação cobriu a interface e o comportamento do cliente; a resposta do
+DNA foi simulada, portanto não substitui um teste contra o backend real.
 
 No backend do Cotação:
 
@@ -285,14 +340,16 @@ local.
 ## Teste manual
 
 1. Abrir **Faltas e Rupturas**.
-2. Informar um EAN/código DNA conhecido no campo correspondente e
-   pressionar `Enter` (ou clicar em **Consultar código**).
-3. Conferir descrição/situação e clicar em **Usar descrição**.
+2. No modo **Código / EAN**, informar um EAN/código DNA conhecido e
+   pressionar `Enter` (ou clicar em **Buscar**).
+3. Conferir descrição/situação e clicar em **Selecionar**.
 4. Repetir com um código inexistente (mensagem de não encontrado) e com a
    função/backend desligado (mensagem de indisponibilidade, campos
    preservados).
-5. Na busca por texto, escolher **Descrição**, digitar `dipirona` e
-   pressionar `Enter`; conferir a lista, o selo de inativo e aplicar um
-   item.
+5. Trocar para **Nome**, digitar `dipirona` e pressionar `Enter`; conferir a
+   lista, o selo de inativo e aplicar um item com **Selecionar**.
 6. Repetir com **Princípio ativo**, com termo sem resultado (lista vazia) e
    com termo genérico que gere mais de 20 itens (aviso de refino).
+7. Confirmar que o formulário de **Urgências** mantém o mesmo comportamento,
+   com acento visual âmbar e os campos preenchidos preservados ao alternar
+   entre as abas.
