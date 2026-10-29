@@ -342,14 +342,10 @@ export default function FaltasRupturasPage() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
-                <FormInput
-                  label="EAN ou código do DNA"
-                  id="ruptura_ean_dna"
-                  placeholder="Opcional"
-                  register={rupturaForm.register('ean_dna')}
-                />
+                <input type="hidden" {...rupturaForm.register('ean_dna')} />
                 <ConsultaProdutoDna
                   codigo={rupturaEanDna}
+                  onCodigoChange={(valor) => rupturaForm.setValue('ean_dna', valor, { shouldValidate: true, shouldDirty: true })}
                   onSelecionar={(produto) => aplicarProdutoDna(rupturaForm, produto)}
                 />
               </div>
@@ -483,14 +479,10 @@ export default function FaltasRupturasPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px', alignItems: 'start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: 0 }}>
-                  <FormInput
-                    label="EAN ou código DNA"
-                    id="urgencia_ean_dna"
-                    placeholder="Opcional"
-                    register={urgenciaForm.register('ean_dna')}
-                  />
+                  <input type="hidden" {...urgenciaForm.register('ean_dna')} />
                   <ConsultaProdutoDna
                     codigo={urgenciaEanDna}
+                    onCodigoChange={(valor) => urgenciaForm.setValue('ean_dna', valor, { shouldValidate: true, shouldDirty: true })}
                     onSelecionar={(produto) => aplicarProdutoDna(urgenciaForm, produto)}
                   />
                 </div>

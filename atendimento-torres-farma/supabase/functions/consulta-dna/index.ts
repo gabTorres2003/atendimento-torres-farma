@@ -12,8 +12,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
  *   COTACAO_INTEGRACAO_USUARIO
  *   COTACAO_INTEGRACAO_PIN
  *
- * Operação permitida nesta versão: somente leitura de produto por código
- * interno/EAN. Nenhum dado pessoal de cliente é consultado.
+ * Operações permitidas nesta versão (somente leitura, sem dados pessoais):
+ *   - produto por código interno/EAN;
+ *   - pesquisa por descrição ou princípio ativo, com lista curta.
  */
 
 const allowedOrigins = new Set([
@@ -22,7 +23,9 @@ const allowedOrigins = new Set([
   'http://127.0.0.1:5173',
 ])
 
-const TERMO_VALIDO = /^[0-9A-Za-z]{1,20}$/
+const TERMO_CODIGO_VALIDO = /^[0-9A-Za-z]{1,20}$/
+const TIPOS_TEXTO = new Set(['descricao', 'principio'])
+const TEXTO_VALIDO = /^[\p{L}\p{N}][\p{L}\p{N}\s.,'ºª+\-/()]{1,39}$/u
 const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TIMEOUT_MS = 8000
 const VALIDADE_TOKEN_MS = 30 * 60 * 1000
@@ -105,17 +108,20 @@ async function obterTokenCotacao() {
   return dados.token
 }
 
-async function consultarProduto(termo: string) {
+async function consultarProduto(termo: string, tipoTexto?: string) {
   let token = await obterTokenCotacao()
 
+  const params = new URLSearchParams({ q: termo })
+  if (tipoTexto) params.set('tipo', tipoTexto)
+  const rota = tipoTexto
+    ? `${cotacaoUrl}/api/integracao-balcao/produtos/pesquisa?${params}`
+    : `${cotacaoUrl}/api/integracao-balcao/produtos?${params}`
+
   const executar = (bearer: string) =>
-    fetch(
-      `${cotacaoUrl}/api/integracao-balcao/produtos?q=${encodeURIComponent(termo)}`,
-      {
-        headers: { Authorization: `Bearer ${bearer}` },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      },
-    )
+    fetch(rota, {
+      headers: { Authorization: `Bearer ${bearer}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    })
 
   let resposta = await executar(token)
 
@@ -154,11 +160,27 @@ deno.serve(async (request: Request) => {
       )
     }
 
-    const { termo, actor } = await request.json()
+    const { termo, tipo, actor } = await request.json()
     await validarUsuario(actor)
 
-    const codigo = String(termo || '').trim()
-    if (!TERMO_VALIDO.test(codigo)) {
+    const tipoTexto = typeof tipo === 'string' ? tipo.trim().toLowerCase() : ''
+    const pesquisaTexto = TIPOS_TEXTO.has(tipoTexto)
+
+    let valor = String(termo || '').trim()
+
+    if (pesquisaTexto) {
+      valor = valor.replace(/\s+/g, ' ')
+      if (valor.length < 2 || valor.length > 40 || !TEXTO_VALIDO.test(valor)) {
+        return jsonResponse(
+          {
+            success: false,
+            error: 'Informe de 2 a 40 caracteres, usando apenas letras, números e espaços.',
+          },
+          request,
+          400,
+        )
+      }
+    } else if (!TERMO_CODIGO_VALIDO.test(valor)) {
       return jsonResponse(
         {
           success: false,
@@ -169,10 +191,26 @@ deno.serve(async (request: Request) => {
       )
     }
 
-    const resposta = await consultarProduto(codigo)
+    const resposta = await consultarProduto(
+      valor,
+      pesquisaTexto ? tipoTexto : undefined,
+    )
 
     if (resposta.status === 404) {
-      return jsonResponse({ success: true, encontrado: false }, request)
+      return pesquisaTexto
+        ? jsonResponse({ success: true, resultados: [], truncado: false }, request)
+        : jsonResponse({ success: true, encontrado: false }, request)
+    }
+
+    if (resposta.status === 400) {
+      let mensagem = 'Pesquisa inválida. Refine o termo.'
+      try {
+        const corpoErro = await resposta.json()
+        if (corpoErro?.mensagem) mensagem = String(corpoErro.mensagem)
+      } catch {
+        // resposta sem corpo JSON: usa mensagem padrão
+      }
+      return jsonResponse({ success: false, error: mensagem }, request, 400)
     }
 
     if (resposta.status === 503) {
@@ -192,6 +230,18 @@ deno.serve(async (request: Request) => {
         { success: false, error: 'Não foi possível consultar o produto.' },
         request,
         502,
+      )
+    }
+
+    if (pesquisaTexto) {
+      const dados = await resposta.json()
+      return jsonResponse(
+        {
+          success: true,
+          resultados: Array.isArray(dados?.resultados) ? dados.resultados : [],
+          truncado: Boolean(dados?.truncado),
+        },
+        request,
       )
     }
 
