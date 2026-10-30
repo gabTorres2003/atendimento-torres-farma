@@ -881,18 +881,36 @@ src/features/rupturas/FaltasRupturasPage.jsx
 src/features/rupturas/FaltasRupturasPage.css
 ```
 
-A interface da consulta é compartilhada entre **Rupturas** e **Urgências**:
+A aba **Faltas e Rupturas** é exclusiva de rupturas: a opção de **Urgências
+foi removida dessa aba**. Tabela `urgencias`, hook `useUrgencias` e
+repositório `UrgenciasRepository` continuam intactos e nenhum registro foi
+apagado; apenas a interface de urgência saiu desta tela.
 
-- um único campo alterna entre **Código / EAN**, **Nome** e
-  **Princípio ativo**, mantendo `Enter`, botão de busca e as mesmas consultas;
+Fluxo da aba (duas opções iniciais):
+
+- **Escrever Manualmente** — formulário direto com produto, canal de
+  procura, cliente, quantidade e telefone;
+- **Pesquisar no DNA** — abre a consulta e, após selecionar o produto,
+  mostra os mesmos campos do cliente para concluir o registro.
+
+Ambas levam ao mesmo formulário e à mesma gravação em `rupturas`.
+
+A busca no DNA:
+
+- um único campo alterna entre **Código de barras / DNA**, **Nome do
+  produto** e **Princípio ativo**, mantendo `Enter`, botão de busca e as
+  mesmas consultas;
 - o produto só é aplicado ao formulário pelo botão **Selecionar** de cada
   resultado (sem clique acidental na linha);
-- o componente é o mesmo nas duas abas; `contexto="ruptura"` ou
-  `contexto="urgencia"` muda apenas acento (azul/âmbar), rótulos e textos de
-  orientação;
-- cada instância usa IDs próprios (`useId`), pois as duas buscas convivem na
-  mesma página;
 - não houve mudança de contrato, validação, permissão ou gravação.
+
+> **A busca por nome/princípio ativo está parada em produção**: a Edge
+> Function `consulta-dna` publicada ainda é a versão anterior ao suporte de
+> pesquisa textual (ignora `tipo` e responde como busca por código). O
+> frontend agora exibe erro explícito em vez de "nenhum resultado". A
+> correção depende de publicar a função:
+> `npx supabase functions deploy consulta-dna --project-ref uddmenewrluxyewdyfxe`.
+> A busca por código/EAN continua funcionando.
 
 Detalhes, contrato do endpoint, pendências e limitações:
 `INTEGRACAO_DNA_COTACAO.md` (neste repositório) e

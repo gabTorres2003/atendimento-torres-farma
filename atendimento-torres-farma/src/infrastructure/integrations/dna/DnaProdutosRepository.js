@@ -112,8 +112,19 @@ export const DnaProdutosRepository = {
       throw new Error(data?.error || 'Não foi possível pesquisar os produtos.');
     }
 
+    // A versão publicada da Edge Function ainda é a anterior à pesquisa
+    // textual: ela ignora `tipo` e responde como busca por código
+    // (`encontrado`), o que antes era interpretado como "sem resultados".
+    // Agora a falha é explícita em vez de parecer uma lista vazia.
+    if (!Array.isArray(data.resultados)) {
+      throw new Error(
+        'A busca por nome/princípio ativo não está disponível nesta versão publicada da função consulta-dna. '
+        + 'Use a busca por código/EAN ou publique a versão atual da função.'
+      );
+    }
+
     const resultado = {
-      resultados: Array.isArray(data.resultados) ? data.resultados : [],
+      resultados: data.resultados,
       truncado: Boolean(data.truncado),
     };
 

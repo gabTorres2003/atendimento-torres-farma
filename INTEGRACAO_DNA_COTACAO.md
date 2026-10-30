@@ -70,33 +70,42 @@ código e por `tipo:termo` (texto em minúsculas). São tratados: código/termo
 inválido, produto não encontrado, lista vazia, lista truncada,
 indisponibilidade do gateway e timeout.
 
-### Interface de busca (Rupturas e Urgências)
+### Interface de busca (somente Rupturas/Faltas)
 
-O componente `ConsultaProdutoDna` foi reorganizado em uma única experiência
-visual, compartilhada pelas duas operações:
+A aba de **Faltas e Rupturas** ficou exclusiva de rupturas: a opção de
+**Urgências foi removida desta aba** (a tabela `urgencias`, o hook
+`useUrgencias` e o repositório `UrgenciasRepository` permanecem intactos e
+nada foi apagado do banco).
 
-- **Um campo, três modos:** Código/EAN, Nome e Princípio ativo. O atendente
-  escolhe o modo e usa o mesmo campo; não existem dois campos concorrentes.
-- **Código/EAN:** aceita EAN ou código interno do DNA e consulta o produto
-  exato, com botão de busca, `Enter` e ação "Limpar resultado".
-- **Nome e princípio ativo:** executam a pesquisa textual já existente, com
-  lista curta, contagem de resultados e aviso de lista parcial.
-- **Seleção explícita:** cada resultado tem um botão "Selecionar"; o item
-  não é aplicado ao formulário ao clicar em qualquer área do cartão. Isso
-  reduz seleções acidentais entre produtos parecidos.
+Ao abrir a aba o atendente vê apenas duas opções:
+
+1. **Escrever Manualmente** — formulário direto com produto, canal de
+   procura, cliente, quantidade e telefone.
+2. **Pesquisar no DNA** — abre o painel de consulta e, depois da seleção,
+   mostra os mesmos campos do cliente para concluir o registro.
+
+Ambas as opções levam ao mesmo formulário e à mesma gravação; o que muda é
+como o produto é identificado.
+
+O componente `ConsultaProdutoDna` continua com um único campo e três modos:
+
+- **Código de barras / DNA:** aceita EAN ou código interno do DNA e consulta
+  o produto exato, com botão de busca, `Enter` e ação "Limpar resultado".
+- **Nome do produto** e **Princípio ativo:** executam a pesquisa textual.
+- **Seleção explícita:** cada resultado tem um botão "Selecionar"; nada é
+  aplicado ao formulário por clique acidental na linha.
 - **Hierarquia do resultado:** nome em destaque; princípio ativo,
   apresentação e fabricante em blocos comparáveis; códigos DNA/EAN em chips;
   selo e aviso para produto inativo.
 - **Estados desenhados:** inicial, carregando (com skeleton), sem
   resultados, erro e resultados encontrados.
-- **Contexto visual:** a busca recebe `contexto="ruptura"` ou
-  `contexto="urgencia"`. A estrutura é a mesma; apenas o acento (azul/âmbar),
-  o rótulo e a orientação mudam. O cartão de urgência também recebe acento
-  âmbar no topo.
+- **Falha visível:** enquanto a versão publicada da Edge Function não aceitar
+  o parâmetro `tipo`, a busca textual retorna erro explícito (ver
+  "Causa raiz da busca por nome" abaixo) em vez de mostrar um "nenhum
+  resultado" falso.
 - **Acessibilidade:** rótulos associados ao campo, `aria-pressed` nos modos e
   na seleção, `role="alert"` para erros, anúncio de resultados via
-  `aria-live`, foco visível e IDs únicos por instância (`useId`), já que a
-  tela renderiza duas buscas ao mesmo tempo.
+  `aria-live`, foco visível e IDs únicos por instância (`useId`).
 - **Sem mudança de contrato:** `DnaProdutosRepository`, Edge Function,
   validações, cache, consultas e gravações no Supabase permanecem iguais.
 
@@ -107,6 +116,59 @@ src/features/rupturas/FaltasRupturasPage.jsx
 src/features/rupturas/FaltasRupturasPage.css
 ```
 
+### Causa raiz da busca por nome (investigação em 30/10/2026)
+
+A busca por nome/descrição **não quebrou no código**: a Edge Function
+`consulta-dna` publicada no projeto Supabase ainda é a versão **anterior** ao
+suporte a pesquisa textual (commit `acb6417`), que ignora o parâmetro `tipo`.
+
+Prova obtida chamando a função publicada:
+
+```text
+POST consulta-dna {termo:"7891317026554"}            -> 200 {"encontrado":true,...}   (busca por código OK)
+POST consulta-dna {termo:"dipirona",tipo:"descricao"} -> 200 {"encontrado":false}      (?)
+POST consulta-dna {termo:"dipirona 500",tipo:"descricao"} -> 400 "Informe apenas letras ou números (até 20 caracteres)."
+```
+
+A última resposta usa uma mensagem que **só existe na versão antiga**. Ou
+seja, a função publicada trata `dipirona` como um *código*, o backend do
+Cotação responde `404` e a função devolve `{"success":true,"encontrado":false}`.
+O frontend, esperando `resultados`, interpretava isso como lista vazia — por
+isso a tela mostrava "Nenhum produto corresponde à busca" sem erro nenhum.
+A busca por EAN/código continuava funcionando porque não depende de `tipo`.
+
+Correções aplicadas neste repositório:
+
+- `DnaProdutosRepository.pesquisarProdutos` agora valida se a resposta traz
+  `resultados`. Se não vier (versão publicada antiga), lança erro explícito
+  em vez de simular lista vazia.
+- A Edge Function, em modo textual, deixou de converter `404` em lista
+  vazia: o backend responde `200` com lista vazia quando não encontra
+  produtos, então `404` significa rota inexistente e agora vira erro `503`
+  com mensagem orientando a publicar a versão com `/produtos/pesquisa`.
+
+A correção definitiva exige publicar a função:
+
+```bash
+npx supabase functions deploy consulta-dna --project-ref uddmenewrluxyewdyfxe
+```
+
+O backend do Cotação com `/api/integracao-balcao/produtos/pesquisa` também
+precisa estar publicado. Enquanto isso, a tela informa a indisponibilidade e
+a busca por código/EAN segue operando.
+
+### Listagem das rupturas cadastradas
+
+- Os registros são agrupados por produto e **todos os clientes de cada
+  produto aparecem** — a tabela `rupturas` já modela uma linha por
+  solicitação (com `nome_cliente` e `telefone_cliente`), então não há
+  perda de cliente ao agrupar.
+- Cada linha mostra cliente, telefone (ou "sem telefone"), data/hora, canal,
+  quantidade e usuário que registrou.
+- O cabeçalho do grupo mostra o EAN/DNA quando algum registro possui e a
+  contagem de clientes.
+- Administradores podem excluir um registro específico (com confirmação
+  informando o cliente).
 
 ### Busca por descrição ou princípio ativo
 
@@ -264,17 +326,40 @@ Os arquivos alterados não introduzem erros de lint. O único diagnóstico neles
 é o aviso `react-hooks/incompatible-library` para `react-hook-form.watch()`,
 que já existia na tela e permanece como aviso.
 
-Validação visual da nova interface (29/10/2026), em navegador real com a Edge
-Function simulada em service worker:
+Validação visual da nova interface (30/10/2026), em navegador real com a
+Edge Function simulada em service worker:
 
 ```text
-1440px  inicial, carregando, resultados por nome, seleção aplicada,
-        código encontrado via Enter, sem resultado, erro e aviso de lista
-        truncada                                          -> OK
-430px   layout inicial e lista de resultados              -> OK
-DOM     sem IDs duplicados com as duas buscas na tela     -> OK
-Rede    duplo Enter gerou exatamente 1 requisição         -> OK
-Console sem erros nem avisos durante a interação          -> OK
+30/10/2026 (aba exclusiva de Rupturas, com dois cenários de função):
+  cenário A — função publicada ANTIGA (comportamento real de hoje):
+    1440px  duas opções iniciais, sem menção a Urgências,
+            busca por nome com erro explícito da integração,
+            busca por EAN/código funcionando                -> OK
+  cenário B — função ATUALIZADA (esperado após deploy):
+    listagem com TODOS os clientes por produto, telefone
+    ausente tratado como "sem telefone", registro antigo   -> OK
+    busca por nome e por princípio ativo com resultados     -> OK
+    produto inativo sinalizado, sem duplicatas              -> OK
+    seleção explícita, validação de campos obrigatórios,
+    cadastro salvo e listagem atualizada                    -> OK
+    estados sem resultados e "Voltar"                       -> OK
+    430px  opções iniciais e listagem                       -> OK
+    DOM    sem IDs duplicados                               -> OK
+    Console sem erros nem avisos                            -> OK
+```
+
+A resposta do DNA foi simulada por service worker local, portanto a
+validação cobre a interface e o comportamento do cliente; não substitui um
+teste contra o backend real após o deploy.
+
+Chamadas reais à função publicada em 30/10/2026 (prova da causa raiz):
+
+```text
+POST consulta-dna {termo:"7891317026554"}                -> 200 produto BEDOZE
+POST consulta-dna {termo:"dipirona",tipo:"descricao"}    -> 200 {"encontrado":false}
+POST consulta-dna {termo:"dipirona 500",tipo:"descricao"}-> 400 "Informe apenas letras ou números (até 20 caracteres)."
+GET  consulta-dna                                        -> 405 (método não permitido)
+POST consulta-dna {actor:{id:"abc"}}                     -> 403 "Usuário não identificado."
 ```
 
 Essa validação cobriu a interface e o comportamento do cliente; a resposta do
@@ -333,23 +418,52 @@ local.
 - **Acentos no cadastro.** O termo é normalizado sem acentos; se algum
   produto estiver cadastrado com acento, a busca digitada sem acento pode
   não encontrá-lo. A busca por código/EAN continua garantida.
-- **Deploy pendente.** A Edge Function `consulta-dna` e o backend do
-  Cotação com o endpoint `/produtos/pesquisa` precisam ser publicados para
-  a mudança valer em produção.
+- **Deploy pendente — causa da busca por nome parada.** A Edge Function
+  `consulta-dna` publicada no Supabase ainda é a versão anterior à pesquisa
+  textual: ela ignora `tipo` e responde como busca por código. Por isso a
+  busca por nome/princípio ativo hoje devolve "nenhum resultado" em vez de
+  lista. O frontend foi ajustado para mostrar erro explícito nesse caso, mas
+  o retorno da funcionalidade depende de publicar a função:
+
+  ```bash
+  npx supabase functions deploy consulta-dna --project-ref uddmenewrluxyewdyfxe
+  ```
+
+  O backend do Cotação com `/produtos/pesquisa` também precisa estar
+  publicado. A busca por código/EAN funciona independentemente disso.
 
 ## Teste manual
 
-1. Abrir **Faltas e Rupturas**.
-2. No modo **Código / EAN**, informar um EAN/código DNA conhecido e
-   pressionar `Enter` (ou clicar em **Buscar**).
-3. Conferir descrição/situação e clicar em **Selecionar**.
-4. Repetir com um código inexistente (mensagem de não encontrado) e com a
-   função/backend desligado (mensagem de indisponibilidade, campos
-   preservados).
-5. Trocar para **Nome**, digitar `dipirona` e pressionar `Enter`; conferir a
-   lista, o selo de inativo e aplicar um item com **Selecionar**.
-6. Repetir com **Princípio ativo**, com termo sem resultado (lista vazia) e
-   com termo genérico que gere mais de 20 itens (aviso de refino).
-7. Confirmar que o formulário de **Urgências** mantém o mesmo comportamento,
-   com acento visual âmbar e os campos preenchidos preservados ao alternar
-   entre as abas.
+Com a aba **Faltas e Rupturas** aberta, a tela deve mostrar apenas duas
+opções: **Escrever Manualmente** e **Pesquisar no DNA**. Não deve haver
+nenhuma menção a Urgências.
+
+Escrever Manualmente:
+
+1. Clicar em **Escrever Manualmente**.
+2. Preencher produto, canal, nome do cliente, quantidade e telefone.
+3. Tentar salvar sem nome de cliente (erro de obrigatório).
+4. Salvar e conferir a mensagem de sucesso e o registro na listagem.
+
+Pesquisar no DNA:
+
+5. Clicar em **Pesquisar no DNA**, escolher **Código de barras / DNA** e
+   informar um EAN/código DNA conhecido; conferir o produto e clicar em
+   **Selecionar**.
+6. Repetir com código inexistente (mensagem de não encontrado).
+7. Escolher **Nome**, digitar `dipirona` e pressionar `Enter`. Se a função
+   publicada ainda for a antiga, a tela mostra o erro de integração
+   explícito (é o esperado até o deploy); após o deploy, mostra a lista com
+   selo de inativo.
+8. Repetir com **Princípio ativo**, com termo sem resultado e com termo
+   genérico que gere mais de 20 itens (aviso de refino).
+9. Selecionar um produto, preencher os dados do cliente e salvar.
+
+Listagem:
+
+10. Conferir que produtos com dois ou mais clientes listam **todos** eles,
+    com telefone (ou "sem telefone"), data, canal, quantidade e usuário.
+11. Conferir que registros antigos sem telefone ou sem EAN aparecem sem
+    quebrar o layout.
+12. Com perfil administrador, excluir um registro específico e confirmar a
+    remoção apenas daquele cliente.

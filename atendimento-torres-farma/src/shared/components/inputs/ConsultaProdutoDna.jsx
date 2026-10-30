@@ -8,7 +8,6 @@ import {
 } from 'react';
 import {
   AlertCircle,
-  AlertTriangle,
   Barcode,
   Check,
   CheckCircle2,
@@ -18,7 +17,6 @@ import {
   Pill,
   Plus,
   Search,
-  ShieldAlert,
   X
 } from 'lucide-react';
 import { useAuth } from '../../../core/hooks/useAuth';
@@ -28,16 +26,20 @@ import './ConsultaProdutoDna.css';
 /**
  * Consulta somente leitura do produto no DNA.
  *
- * Um único campo alterna entre as quatro formas de localização usadas no
- * balcão: EAN, código interno do DNA, nome/descrição e princípio ativo.
- * A consulta continua sendo manual e nenhum produto é aplicado ao formulário
- * sem uma ação explícita do atendente.
+ * Um único campo alterna entre as três formas de localização usadas no
+ * balcão: EAN/código interno, nome/descrição e princípio ativo.
+ *
+ * A busca textual só funciona quando a Edge Function publicada aceita o
+ * parâmetro `tipo`. Enquanto a versão antiga estiver publicada, a resposta
+ * vem como busca por código e este componente a converte em erro explícito
+ * (ver `DnaProdutosRepository.pesquisarProdutos`), em vez de mostrar um
+ * "nenhum resultado" falso.
  */
 
 const MODOS = [
   {
     id: 'codigo',
-    rotulo: 'Código / EAN',
+    rotulo: 'Código de barras / DNA',
     icone: Barcode,
     label: 'Código de barras ou código DNA',
     placeholder: 'Leia o código ou digite EAN/código DNA',
@@ -46,7 +48,7 @@ const MODOS = [
   },
   {
     id: 'nome',
-    rotulo: 'Nome',
+    rotulo: 'Nome do produto',
     icone: PackageSearch,
     label: 'Nome ou descrição do produto',
     placeholder: 'Ex.: dipirona 500mg',
@@ -63,31 +65,6 @@ const MODOS = [
     maxLength: 40
   }
 ];
-
-const CONTEXTOS = {
-  ruptura: {
-    eyebrow: 'Ruptura · DNA',
-    titulo: 'Localizar produto',
-    descricao: 'Busque o produto solicitado pelo cliente e selecione-o para aplicar ao registro.',
-    dicaInicial: 'Busque por código, nome ou princípio ativo para localizar o produto solicitado.',
-    Icone: AlertTriangle
-  },
-  urgencia: {
-    eyebrow: 'Urgência · DNA',
-    titulo: 'Localizar produto',
-    descricao: 'Busque o item prioritário da próxima compra e selecione-o para aplicar ao registro.',
-    dicaInicial: 'Busque por código, nome ou princípio ativo para localizar o item prioritário.',
-    Icone: ShieldAlert
-  }
-};
-
-const CONTEXTO_PADRAO = {
-  eyebrow: 'Consulta ao DNA',
-  titulo: 'Buscar produto',
-  descricao: 'Encontre o produto por código, nome ou princípio ativo e selecione-o para aplicar ao registro.',
-  dicaInicial: 'Busque por código, nome ou princípio ativo.',
-  Icone: Search
-};
 
 const mesmoProduto = (primeiro, segundo) => (
   Boolean(primeiro && segundo)
@@ -108,7 +85,7 @@ function ProdutoResultado({ produto, ativo, desabilitado, onSelecionar }) {
   ].filter((item) => item.valor);
 
   return (
-    <article className={`dna-result${ativo ? ' dna-result--selecionado' : ''}`}>
+    <article className={`dna-result${ativo ? 'dna-result--selecionado' : ''}`}>
       <div className="dna-result__top">
         <h4 className="dna-result__name">{descricao}</h4>
         {inativo && <span className="dna-chip dna-chip--inativo">Inativo no DNA</span>}
@@ -160,7 +137,7 @@ function ProdutoResultado({ produto, ativo, desabilitado, onSelecionar }) {
 }
 
 const ConsultaProdutoDna = forwardRef(function ConsultaProdutoDna(
-  { codigo, onCodigoChange, onSelecionar, desabilitado = false, contexto },
+  { codigo, onCodigoChange, onSelecionar, desabilitado = false },
   ref
 ) {
   const { user } = useAuth();
@@ -187,8 +164,6 @@ const ConsultaProdutoDna = forwardRef(function ConsultaProdutoDna(
   const requisicaoRef = useRef(0);
 
   const modoAtual = MODOS.find((item) => item.id === modoBusca) || MODOS[0];
-  const contextoAtual = CONTEXTOS[contexto] || CONTEXTO_PADRAO;
-  const IconeContexto = contextoAtual.Icone;
   const termoAtual = modoBusca === 'codigo' ? String(codigo || '') : termoTexto;
 
   const definirErro = (mensagem, titulo = 'Não foi possível concluir a busca') => {
@@ -208,13 +183,7 @@ const ConsultaProdutoDna = forwardRef(function ConsultaProdutoDna(
   const consultarCodigo = useCallback(async (valorDigitado) => {
     const valor = String(valorDigitado ?? codigo ?? '').trim();
 
-    setErro(null);
-    setProdutoCodigo(null);
-    setResultados([]);
-    setTruncado(false);
-    setPesquisou(false);
-    setNaoEncontrado('');
-    setSelecionado(null);
+    limparEstadoResultados();
 
     if (!valor) {
       definirErro('Informe o EAN ou o código DNA antes de consultar.', 'Revise a busca');
@@ -263,12 +232,7 @@ const ConsultaProdutoDna = forwardRef(function ConsultaProdutoDna(
   const pesquisarTexto = async () => {
     const texto = termoTexto.trim();
 
-    setErro(null);
-    setResultados([]);
-    setTruncado(false);
-    setPesquisou(false);
-    setNaoEncontrado('');
-    setSelecionado(null);
+    limparEstadoResultados();
 
     if (texto.length < 2) {
       definirErro('Digite pelo menos 2 caracteres para pesquisar.', 'Revise a busca');
@@ -381,23 +345,17 @@ const ConsultaProdutoDna = forwardRef(function ConsultaProdutoDna(
   }
 
   return (
-    <section
-      className="dna-search"
-      data-contexto={contexto || 'padrao'}
-      aria-labelledby={tituloId}
-    >
+    <section className="dna-search" aria-labelledby={tituloId}>
       <header className="dna-search__header">
         <div className="dna-search__identity">
           <span className="dna-search__icon" aria-hidden="true">
-            <Search size={20} />
+            <Search size={19} />
           </span>
           <div>
-            <span className="dna-search__eyebrow">
-              <IconeContexto size={13} aria-hidden="true" />
-              {contextoAtual.eyebrow}
-            </span>
-            <h3 id={tituloId} className="dna-search__title">{contextoAtual.titulo}</h3>
-            <p className="dna-search__subtitle">{contextoAtual.descricao}</p>
+            <h3 id={tituloId} className="dna-search__title">Pesquisar no DNA</h3>
+            <p className="dna-search__subtitle">
+              Escolha como pesquisar e informe o produto solicitado.
+            </p>
           </div>
         </div>
 
@@ -520,7 +478,7 @@ const ConsultaProdutoDna = forwardRef(function ConsultaProdutoDna(
             </span>
             <div>
               <strong>Pronto para buscar</strong>
-              <span>{contextoAtual.dicaInicial}</span>
+              <span>Busque por código, nome ou princípio ativo para localizar o produto.</span>
             </div>
           </div>
         )}
@@ -530,7 +488,7 @@ const ConsultaProdutoDna = forwardRef(function ConsultaProdutoDna(
             <CheckCircle2 size={18} aria-hidden="true" />
             <span>
               <strong>{selecionado.descricao || 'Produto selecionado'}</strong>
-              {' '}foi aplicado ao formulário.
+              {' '}foi aplicado ao formulário. Preencha os dados do cliente e salve.
             </span>
           </div>
         )}

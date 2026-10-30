@@ -19,14 +19,6 @@
     #ffffff;
 }
 
-.dna-search[data-contexto='urgencia'] {
-  --dna-accent: #b45309;
-  --dna-accent-strong: #92400e;
-  --dna-accent-soft: #fffbeb;
-  --dna-accent-border: #fde68a;
-  --dna-focus-ring: rgba(180, 83, 9, 0.16);
-}
-
 .dna-search__header {
   display: flex;
   align-items: flex-start;

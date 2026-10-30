@@ -197,9 +197,22 @@ deno.serve(async (request: Request) => {
     )
 
     if (resposta.status === 404) {
-      return pesquisaTexto
-        ? jsonResponse({ success: true, resultados: [], truncado: false }, request)
-        : jsonResponse({ success: true, encontrado: false }, request)
+      // O backend responde 200 com lista vazia quando não encontra produtos.
+      // 404 significa que a rota de pesquisa textual não existe na versão
+      // publicada do Cotação: é uma falha de integração, não "sem resultados".
+      if (pesquisaTexto) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              'A pesquisa por nome/princípio ativo não está disponível no servidor do Cotação. Verifique se a versão com /produtos/pesquisa foi publicada.',
+          },
+          request,
+          503,
+        )
+      }
+
+      return jsonResponse({ success: true, encontrado: false }, request)
     }
 
     if (resposta.status === 400) {
