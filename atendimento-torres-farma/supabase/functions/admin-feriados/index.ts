@@ -52,6 +52,29 @@ const supabaseUrl = deno.env.get('SUPABASE_URL')!
 const serviceRoleKey = deno.env.get('SERVICE_ROLE_KEY')!
 const adminClient = createClient(supabaseUrl, serviceRoleKey)
 
+const ESCALA_LIMITES = {
+  CAIXA: 1,
+  BALCONISTA: 2,
+  MOTOBOY: 2,
+} as const
+
+function horarioPadrao(data?: string | null) {
+  const dia = data ? new Date(`${data}T00:00:00`).getDay() : 1
+  return dia === 0
+    ? { inicio: '08:00', fim: '14:00' }
+    : { inicio: '08:00', fim: '20:00' }
+}
+
+function validarMembrosEscala(membros: any[] = []) {
+  const trabalhando = membros.filter((membro) => membro.situacao === 'TRABALHA')
+  for (const tipo of Object.keys(ESCALA_LIMITES) as Array<keyof typeof ESCALA_LIMITES>) {
+    const quantidade = trabalhando.filter((membro) => membro.tipo_funcionario === tipo).length
+    if (quantidade > ESCALA_LIMITES[tipo]) {
+      throw new Error(`A escala não pode ter mais de ${ESCALA_LIMITES[tipo]} ${tipo.toLowerCase()}(s) trabalhando.`)
+    }
+  }
+}
+
 async function validarAdmin(actor: { id?: string }) {
   if (!actor?.id) {
     throw new Error('Usuário não identificado.')
@@ -128,6 +151,16 @@ async function executarAcao(
     return adminClient.from('feriados').delete().eq('id', payload.id)
   }
   if (action === 'SALVAR_ESCALA') {
+    validarMembrosEscala(payload.membros || [])
+    const { data: feriado, error: feriadoError } = await adminClient
+      .from('feriados')
+      .select('data')
+      .eq('id', payload.feriado_id)
+      .single()
+    if (feriadoError) throw feriadoError
+    const padrao = horarioPadrao(feriado.data)
+    const horarioInicio = payload.horario_inicio || padrao.inicio
+    const horarioFim = payload.horario_fim || padrao.fim
     const { data: existing, error: existingError } = await adminClient
       .from('escalas_feriados')
       .select('id')
@@ -140,8 +173,8 @@ async function executarAcao(
       const result = await adminClient
         .from('escalas_feriados')
         .update({
-          horario_inicio: payload.horario_inicio || null,
-          horario_fim: payload.horario_fim || null,
+          horario_inicio: horarioInicio,
+          horario_fim: horarioFim,
           status: 'PENDENTE',
           updated_at: new Date().toISOString(),
         })
@@ -156,8 +189,8 @@ async function executarAcao(
         .insert([
           {
             feriado_id: payload.feriado_id,
-            horario_inicio: payload.horario_inicio || null,
-            horario_fim: payload.horario_fim || null,
+            horario_inicio: horarioInicio,
+            horario_fim: horarioFim,
             status: 'RASCUNHO',
             criada_por: admin.id,
             criada_em: new Date().toISOString(),
@@ -185,10 +218,10 @@ async function executarAcao(
             ? membro.balconista_id || membro.id
             : null,
         motoboy_id:
-          membro.tipo_funcionario === 'MOTOBOY' ? membro.motoboy_id : null,
+          membro.tipo_funcionario === 'MOTOBOY' ? membro.motoboy_id || membro.id : null,
         situacao: membro.situacao,
-        horario_inicio: membro.horario_inicio || null,
-        horario_fim: membro.horario_fim || null,
+        horario_inicio: membro.horario_inicio || horarioInicio,
+        horario_fim: membro.horario_fim || horarioFim,
       }))
       const { error: insertError } = await adminClient
         .from('escala_feriados_membros')
@@ -239,6 +272,7 @@ async function executarAcao(
       .single()
   }
   if (action === 'SALVAR_MEMBROS') {
+    validarMembrosEscala(payload.membros || [])
     const { error: deleteError } = await adminClient
       .from('escala_feriados_membros')
       .delete()

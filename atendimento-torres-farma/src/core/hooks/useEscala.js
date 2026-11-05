@@ -187,7 +187,7 @@ function calcularSugestao(
     folgando: ordenada
       .filter((pessoa) => !idsTrabalhando.has(pessoa.id))
       .map((pessoa) => toMember(pessoa, 'FOLGA')),
-    horarioInicio: '07:00',
-    horarioFim: '18:00'
+    horarioInicio: null,
+    horarioFim: null
   };
 }

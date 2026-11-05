@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   CalendarDays, ChevronLeft, ChevronRight, Users, AlertTriangle,
   Clock3, Plus, Minus, Save, Trash2, History, RefreshCw,
-  X, Check, ArrowRightLeft
+  X, Check, ArrowRightLeft, UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../core/hooks/useAuth';
 import { Card } from '../../shared/components/cards/Card';
@@ -11,13 +11,6 @@ import { useFeriados } from '../../core/hooks/useFeriados';
 import { useEscala } from '../../core/hooks/useEscala';
 import { FeriadosRepository } from '../../infrastructure/supabase/repositories/FeriadosRepository';
 import { CaixaMotoboysRepository } from '../../infrastructure/supabase/repositories/CaixaMotoboysRepository';
-
-const normalizeName = (value) => String(value || '')
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .toUpperCase();
 
 const normalizeMember = (member, equipe) => {
   const pessoaId = member.balconista_id || member.motoboy_id;
@@ -56,8 +49,15 @@ const EMPTY_FORM = {
 const EMPTY_DRAFT = {
   trabalhando: [],
   folgando: [],
-  horarioInicio: '07:00',
-  horarioFim: '18:00'
+  horarioInicio: '08:00',
+  horarioFim: '20:00'
+};
+
+const getDefaultSchedule = (dateString) => {
+  const day = new Date(`${dateString}T00:00:00`).getDay();
+  return day === 0
+    ? { horarioInicio: '08:00', horarioFim: '14:00' }
+    : { horarioInicio: '08:00', horarioFim: '20:00' };
 };
 
 export default function EscalaFeriadosPage() {
@@ -98,6 +98,7 @@ export default function EscalaFeriadosPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState('');
+  const [draggedMember, setDraggedMember] = useState(null);
 
   const carregarEquipe = useCallback(async () => {
     try {
@@ -177,16 +178,17 @@ export default function EscalaFeriadosPage() {
     const carregarEscala = async () => {
       const escala = await buscarEscalaCompleta(selectedFeriado?.id);
       if (escala) {
+        const defaultSchedule = getDefaultSchedule(selectedDate);
         setStatusEscala(escala.status);
         setDraft({
           trabalhando: escala.membros?.filter((m) => m.situacao === 'TRABALHA').map((m) => normalizeMember(m, equipeCompleta)) || [],
           folgando: escala.membros?.filter((m) => m.situacao === 'FOLGA').map((m) => normalizeMember(m, equipeCompleta)) || [],
-          horarioInicio: escala.horario_inicio || '07:00',
-          horarioFim: escala.horario_fim || '18:00'
+          horarioInicio: escala.horario_inicio || defaultSchedule.horarioInicio,
+          horarioFim: escala.horario_fim || defaultSchedule.horarioFim
         });
       } else {
         setStatusEscala('PENDENTE');
-        setDraft({ ...EMPTY_DRAFT });
+        setDraft({ ...EMPTY_DRAFT, ...getDefaultSchedule(selectedDate) });
       }
     };
     if (selectedFeriado) {
@@ -275,8 +277,8 @@ export default function EscalaFeriadosPage() {
       setDraft({
         trabalhando: sugestao.trabalhando || [],
         folgando: sugestao.folgando || [],
-        horarioInicio: sugestao.horarioInicio || '07:00',
-        horarioFim: sugestao.horarioFim || '18:00'
+        horarioInicio: sugestao.horarioInicio || getDefaultSchedule(selectedDate).horarioInicio,
+        horarioFim: sugestao.horarioFim || getDefaultSchedule(selectedDate).horarioFim
       });
     }
   };
@@ -287,6 +289,7 @@ export default function EscalaFeriadosPage() {
 
     setActionLoading('salvar');
     try {
+      if (!validarComposicao()) return;
       const idsTrabalhando = new Set(draft.trabalhando.map((membro) => membro.id));
       const trabalhando = draft.trabalhando.map((membro) => ({
         ...membro,
@@ -333,11 +336,11 @@ export default function EscalaFeriadosPage() {
     const trabalhando = draft.trabalhando;
     const quantidade = (tipo) => trabalhando.filter((membro) => membro.tipo_funcionario === tipo).length;
     const erros = [];
-    if (quantidade('MOTOBOY') !== 2) erros.push('2 motoboys');
-    if (quantidade('CAIXA') !== 1) erros.push('1 caixa');
-    if (quantidade('BALCONISTA') !== 2) erros.push('2 balconistas');
+    if (quantidade('MOTOBOY') > 2) erros.push('no máximo 2 motoboys');
+    if (quantidade('CAIXA') > 1) erros.push('no máximo 1 caixa');
+    if (quantidade('BALCONISTA') > 2) erros.push('no máximo 2 balconistas');
     if (erros.length > 0) {
-      alert(`A escala precisa ter exatamente: ${erros.join(', ')} trabalhando.`);
+      alert(`A escala não pode exceder: ${erros.join(', ')}.`);
       return false;
     }
     return true;
@@ -484,6 +487,74 @@ export default function EscalaFeriadosPage() {
   const adicionarPessoa = (pessoa, situacao) => {
     toggleMembro(pessoa, situacao);
   };
+
+  const adicionarRestanteAFolga = () => {
+    setDraft((prev) => ({
+      ...prev,
+      folgando: [
+        ...prev.folgando,
+        ...listaDisponivel.map((pessoa) => ({
+          id: pessoa.id,
+          nome: pessoa.nome,
+          tipo_funcionario: pessoa.tipo_funcionario || 'BALCONISTA',
+          situacao: 'FOLGA'
+        }))
+      ]
+    }));
+  };
+
+  const moverMembro = (member, destino) => {
+    setDraft((prev) => {
+      const origem = destino === 'TRABALHA' ? 'folgando' : 'trabalhando';
+      const target = destino === 'TRABALHA' ? 'trabalhando' : 'folgando';
+      if (!prev[origem].some((item) => item.id === member.id)) return prev;
+      if (target === 'trabalhando') {
+        const quantidadeAtual = prev.trabalhando.filter((item) => item.tipo_funcionario === member.tipo_funcionario).length;
+        const limite = member.tipo_funcionario === 'CAIXA' ? 1 : 2;
+        if (quantidadeAtual >= limite) return prev;
+      }
+      return {
+        ...prev,
+        [origem]: prev[origem].filter((item) => item.id !== member.id),
+        [target]: [...prev[target], { ...member, situacao: destino }]
+      };
+    });
+  };
+
+  const soltarNaLista = (destino) => {
+    if (!draggedMember) return;
+    if (draggedMember.listName === 'disponivel') {
+      adicionarPessoa(draggedMember, destino);
+    } else {
+      moverMembro(draggedMember, destino);
+    }
+    setDraggedMember(null);
+  };
+
+  const renderMember = (member, listName) => (
+    <div
+      key={member.id}
+      draggable={isAdmin}
+      onDragStart={() => setDraggedMember({ ...member, listName })}
+      onDragEnd={() => setDraggedMember(null)}
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px 8px', fontSize: '0.85rem', cursor: isAdmin ? 'grab' : 'default' }}
+    >
+      <div>
+        <span>{member.nome}</span>
+        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '6px' }}>{member.tipo_funcionario}</span>
+      </div>
+      {isAdmin && (
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button type="button" onClick={() => handleSwap(member)} title="Trocar" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#2563eb', padding: '2px' }}>
+            <ArrowRightLeft size={13} />
+          </button>
+          <button type="button" onClick={() => toggleMembro({ id: member.id, nome: member.nome, tipo_funcionario: member.tipo_funcionario }, member.situacao)} title="Remover" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}>
+            <Minus size={13} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -664,29 +735,16 @@ export default function EscalaFeriadosPage() {
                       </button>
                     )}
                   </div>
-                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px', minHeight: '140px', background: '#f0f9ff' }}>
+                  <div
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => soltarNaLista('TRABALHA')}
+                    style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px', minHeight: '140px', background: '#f0f9ff' }}
+                  >
                     {draft.trabalhando.length === 0 ? (
                       <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Nenhuma pessoa</span>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {draft.trabalhando.map((m) => (
-                          <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px 8px', fontSize: '0.85rem' }}>
-                            <div>
-                              <span>{m.nome}</span>
-                              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '6px' }}>{m.tipo_funcionario}</span>
-                            </div>
-                            {isAdmin && (
-                              <div style={{ display: 'flex', gap: '4px' }}>
-                                <button type="button" onClick={() => handleSwap(m)} title="Trocar" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#2563eb', padding: '2px' }}>
-                                  <ArrowRightLeft size={13} />
-                                </button>
-                                <button type="button" onClick={() => toggleMembro({ id: m.id, nome: m.nome }, 'TRABALHA')} title="Remover" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}>
-                                  <Minus size={13} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                        {draft.trabalhando.map((m) => renderMember(m, 'trabalhando'))}
                       </div>
                     )}
                   </div>
@@ -700,34 +758,21 @@ export default function EscalaFeriadosPage() {
                       Folgam ({draft.folgando.length})
                     </span>
                     {isAdmin && listaDisponivel.length > 0 && (
-                      <button type="button" onClick={() => adicionarPessoa(listaDisponivel[0], 'FOLGA')} title="Adicionar em Folgam" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #fcd34d', borderRadius: '6px', background: '#fffbeb', color: '#92400e', cursor: 'pointer', padding: '3px 7px', fontSize: '0.72rem' }}>
-                        <Plus size={12} /> Adicionar
+                      <button type="button" onClick={adicionarRestanteAFolga} title="Adicionar todos os restantes à folga" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #fcd34d', borderRadius: '6px', background: '#fffbeb', color: '#92400e', cursor: 'pointer', padding: '3px 7px', fontSize: '0.72rem' }}>
+                        <UserPlus size={12} /> Adicionar restantes
                       </button>
                     )}
                   </div>
-                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px', minHeight: '140px', background: '#fffbeb' }}>
+                  <div
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => soltarNaLista('FOLGA')}
+                    style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px', minHeight: '140px', background: '#fffbeb' }}
+                  >
                     {draft.folgando.length === 0 ? (
                       <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Nenhuma pessoa</span>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {draft.folgando.map((m) => (
-                          <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px 8px', fontSize: '0.85rem' }}>
-                            <div>
-                              <span>{m.nome}</span>
-                              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '6px' }}>{m.tipo_funcionario}</span>
-                            </div>
-                            {isAdmin && (
-                              <div style={{ display: 'flex', gap: '4px' }}>
-                                <button type="button" onClick={() => handleSwap(m)} title="Trocar" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#2563eb', padding: '2px' }}>
-                                  <ArrowRightLeft size={13} />
-                                </button>
-                                <button type="button" onClick={() => toggleMembro({ id: m.id, nome: m.nome }, 'FOLGA')} title="Remover" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}>
-                                  <Minus size={13} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                        {draft.folgando.map((m) => renderMember(m, 'folgando'))}
                       </div>
                     )}
                   </div>
@@ -737,10 +782,10 @@ export default function EscalaFeriadosPage() {
               {/* ADICIONAR PESSOA */}
               {isAdmin && listaDisponivel.length > 0 && (
                 <div style={{ marginTop: '12px' }}>
-                  <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '0.9rem' }}>Adicionar à escala</div>
+                  <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '0.9rem' }}>Arraste uma pessoa para Trabalham ou Folgam, ou use os botões:</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {listaDisponivel.map((pessoa) => (
-                      <div key={pessoa.id || pessoa.nome} style={{ display: 'flex', gap: '4px' }}>
+                      <div key={pessoa.id || pessoa.nome} draggable={isAdmin} onDragStart={() => setDraggedMember({ ...pessoa, listName: 'disponivel' })} style={{ display: 'flex', gap: '4px' }}>
                         <button
                           type="button"
                           onClick={() => adicionarPessoa(pessoa, 'TRABALHA')}

@@ -50,13 +50,16 @@ export const useUsers = () => {
   const deleteUser = async (id) => {
     setLoading(true);
     try {
-      const { error } = await supabase.from('users').delete().eq('id', id);
+      const { error } = await supabase
+        .from('users')
+        .update({ ativo: false })
+        .eq('id', id);
       if (error) throw error;
       await fetchUsers();
       return { success: true };
     } catch (error) {
       console.error('Erro ao deletar usuário:', error);
-      return { success: false, error: 'Erro ao deletar o usuário.' };
+      return { success: false, error: error.message || 'Erro ao inativar o usuário.' };
     } finally {
       setLoading(false);
     }

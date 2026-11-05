@@ -55,8 +55,11 @@ export const UserManagement = () => {
   };
 
   const handleDelete = async (id, nome) => {
-    if (window.confirm(`Tem certeza que deseja excluir o usuário ${nome}?`)) {
-      await deleteUser(id);
+    if (window.confirm(`Tem certeza que deseja inativar o usuário ${nome}? O histórico e as escalas serão preservados.`)) {
+      const result = await deleteUser(id);
+      if (!result.success) {
+        setFormError(result.error);
+      }
     }
   };
 
@@ -167,7 +170,7 @@ export const UserManagement = () => {
                   <button onClick={() => handleEdit(u)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: '16px' }}>
                     <Edit size={18} />
                   </button>
-                  <button onClick={() => handleDelete(u.id, u.nome)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                  <button onClick={() => handleDelete(u.id, u.nome)} disabled={!u.ativo} style={{ background: 'none', border: 'none', cursor: u.ativo ? 'pointer' : 'not-allowed', color: '#ef4444', opacity: u.ativo ? 1 : 0.5 }} title={u.ativo ? 'Inativar usuário' : 'Usuário já inativo'}>
                     <Trash2 size={18} />
                   </button>
                 </td>
